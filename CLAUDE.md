@@ -23,6 +23,9 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - Serve it: `python3 -m http.server 8794 --directory demo`
 - The shaders are copied from `source/Shaders.cpp`, not rewritten. Prove it:
   `python3 demo/tools/check_shaders.py`
+- **The preset table is DUPLICATED in `demo/plugin.js`** (`PRESETS`), by hand,
+  in host 0..1 like `Presets.h`. Nothing checks the two agree, and a retune
+  applied to only one ships a demo showing the old look.
 - The kit under `demo/vendor/` is vendored from
   `stoatworks-backend/resolume-demo/kit/` — fix bugs THERE, not here.
 - Deployed at `https://escapement-demo.stoatworks-labs.com`.
@@ -104,6 +107,13 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - `escapement_core` is an OBJECT library, not STATIC — the plugin registers
   itself from a file-scope constructor nothing references by name.
 - macOS build must be universal. Verify with `lipo`, never the build log.
+- **The grain is the SEED, not the fuel.** Above unity the attractor sustains
+  itself; injection only has to give it something to converge from as Drift
+  moves it. Three presets injected at host 0.500 (physical 0.14), which lit
+  the loop's transient copies of the frame brightly enough to read as boxes
+  AND drove the attractor into the clip. Cutting the food is what fixed the
+  "ugly squares"; `--liveness` is what stops you cutting it too far, and
+  **Drift is the lever that buys liveness back without re-lighting them**.
 - **The constructor defaults ARE the Mirror Tunnel preset, by hand.** They went
   out of step once — the preset was retuned and the defaults were not, so the
   plugin opened on a rig at 1.28 round the loop that saturated to white. Retune

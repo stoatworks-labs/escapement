@@ -20,7 +20,7 @@ namespace stoatworks::about
     inline constexpr auto guide = "https://stoatworks-labs.com/software/escapement/guide/";
     inline constexpr auto page = "https://stoatworks-labs.com/software/escapement/";
     inline constexpr auto repo = "https://github.com/stoatworks-labs/escapement";
-    inline constexpr auto versionFallback = "v0.1.0";
+    inline constexpr auto versionFallback = "v0.1.2";
 
     inline constexpr auto org = "Stoatworks Labs";
     inline constexpr auto home = "https://stoatworks-labs.com";

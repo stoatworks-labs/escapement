@@ -10,7 +10,7 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 
 *The Mirror Tunnel preset. Every edge in it is the frame's own edge, re-photographed.*
 
-> **This is v0.1.0, the first release.** The tap sets are checked against their published constants —
+> **This is v0.1.2.** The tap sets are checked against their published constants —
 > Sierpinski's three maps contract by exactly 0.500, Koch's four by 0.333, the Heighway dragon's
 > two by 0.707, and Barnsley's first map is confirmed singular, as published. Sixty trips round
 > the loop produce a bit-identical frame whether they arrive as sixty frames of one or one frame
@@ -72,6 +72,15 @@ nothing at all to a Sierpinski, which contracts by two and shrugs it off.
 converges to a fixed point. With a little it cannot, because a fixed point would have to be a
 colour that is its own rotation, so the structure keeps re-entering itself and the colour walks the
 wheel for ever. Two thousandths of a turn per field is plenty.
+
+**Inject Level is food, and too much of it is what makes a rig ugly.** Above unity the
+attractor sustains itself, so the grain is only there to give the loop something to converge
+from as Drift moves it. Turn it up and two things go wrong at once: the loop's half-finished
+copies of the frame — the transients it is still working on, which are rectangles, because the
+frame is a rectangle — get bright enough to read as boxes behind the picture, and the attractor
+itself runs into the clip and loses its structure. If a rig looks like a white blob sitting on
+faint grey boxes, that is this, and the fix is less grain rather than more gain. v0.1.2 retuned
+Sierpinski, Koch, Dragon and Seeded for exactly this.
 
 **Focus** is a lens that is slightly soft, and it is *inside* the loop — a low-pass filter inside a
 feedback loop is what stops a hot rig collapsing into single-pixel noise. Sharp and hot is static;
