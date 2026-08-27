@@ -259,11 +259,15 @@ It was not this plugin:
   2502 MB to 1460 MB.
 - The full gate then ran clean end to end.
 
-Arena's launch history on that box reads 01:56, 02:13, 02:40 -- and the 02:40
+Settled by the control experiment rather than by argument: with **every plugin
+removed from the box**, Arena restarted on its own after two minutes. It is the
+box, and nothing to do with this plugin or any other.
+
+Arena's launch history that night reads 01:56, 02:13, 02:40 -- and the 02:40
 restart happened **during the gate run that reported "Arena survived the run"**.
-The gate checks liveness at the end, so a restart mid-run passes it: a real
-crash in the middle of a sweep would be reported as a pass. That is worth
-fixing in the bench, and it is worth knowing before trusting an `alive` PASS.
+The gate checks liveness at the end, so a restart mid-run passes it: a genuine
+crash halfway through a sweep would be reported as a pass. Recorded in
+fleet-notes, because it is the bench every plugin's Windows gate runs on.
 
 ## sync.sh cannot see any repo (found 2026-08-27, NOT fixed)
 
