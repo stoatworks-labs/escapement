@@ -2,7 +2,7 @@
 
 A video feedback rig, and the fractals it settles into, as **two** FFGL plugins
 for Resolume Arena/Avenue: a source (`Escapement`) and an effect that feeds the
-clip into the loop (`Escapement Feedback`). C++/GLSL, CMake MODULE → universal
+clip into the loop (`Escapement Feed`). C++/GLSL, CMake MODULE → universal
 `.bundle` (macOS) + Windows `.dll`. Public MIT repo.
 
 Read `AGENTS.md` before changing the loop, the taps or the proc amp.

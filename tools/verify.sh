@@ -104,7 +104,7 @@ printf '   built\n'
 # success either way.
 #---------------------------------------------------------------------------
 step "architectures"
-for bundle in "Escapement" "Escapement Feedback"; do
+for bundle in "Escapement" "Escapement Feed"; do
 	binary="$BUILD/$bundle.bundle/Contents/MacOS/$bundle"
 	[ -f "$binary" ] || fail "no binary at $binary"
 
@@ -125,7 +125,7 @@ done
 # mode of putting the registration in a STATIC library. Check the symbol.
 #---------------------------------------------------------------------------
 step "registration"
-for bundle in "Escapement" "Escapement Feedback"; do
+for bundle in "Escapement" "Escapement Feed"; do
 	binary="$BUILD/$bundle.bundle/Contents/MacOS/$bundle"
 	nm -gU "$binary" | grep -q plugMain || fail "$bundle does not export plugMain"
 	printf '   %-22s exports plugMain\n' "$bundle"

@@ -19,7 +19,7 @@ Two plugins:
 | | |
 |---|---|
 | **Escapement** | Source. A rig with nothing in front of the lens but what it makes itself. |
-| **Escapement Feedback** | Effect. The same rig with your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
+| **Escapement Feed** | Effect. The same rig with your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
 
 ---
 
@@ -62,7 +62,7 @@ Download the release, unzip, and drop both bundles into:
 - **macOS** — `~/Documents/Resolume Arena/Extra Effects/`
 - **Windows** — `%USERPROFILE%\Documents\Resolume Arena\Extra Effects\`
 
-Restart Resolume. `Escapement` appears under Sources; `Escapement Feedback`
+Restart Resolume. `Escapement` appears under Sources; `Escapement Feed`
 under Effects.
 
 macOS builds are universal (Apple Silicon and Intel). There is no signed release

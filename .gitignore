@@ -11,3 +11,6 @@
 /.vscode/
 *.xcodeproj/xcuserdata/
 /build-*/
+
+# Windows artefacts, built on the Parallels guest by winbuild/build-escapement.ps1
+/out-windows/

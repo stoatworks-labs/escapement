@@ -133,7 +133,7 @@ endfunction()
 escapement_add_plugin(EscapementSource source/SourcePlugin.cpp
     "Escapement" "com.stoatworks.ffgl.escapement")
 escapement_add_plugin(EscapementEffect source/EffectPlugin.cpp
-    "Escapement Feedback" "com.stoatworks.ffgl.escapement.feedback")
+    "Escapement Feed" "com.stoatworks.ffgl.escapement.feedback")
 
 # ---------------------------------------------------------------------------
 # Offline harness. Where the rig is actually verified rather than merely

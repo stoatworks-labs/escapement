@@ -1777,7 +1777,7 @@ mountDemo({
     default: 'source',
     options: [
       { id: 'source', name: 'Escapement', hint: 'The source: a rig with nothing in front of the lens but what it makes itself.' },
-      { id: 'effect', name: 'Escapement Feedback', hint: 'The effect: the clip in front of the lens, injected INTO the loop, so the fractal is built out of the footage.' },
+      { id: 'effect', name: 'Escapement Feed', hint: 'The effect: the clip in front of the lens, injected INTO the loop, so the fractal is built out of the footage.' },
     ],
   },
 
@@ -1787,7 +1787,7 @@ mountDemo({
     'This page is STATEFUL and no other demo in this kit is. The picture is the whole history of the loop, so a frame cannot be rendered on its own: the loop advances on elapsed time, which means Step advances the rig by one field rather than drawing "the frame at time t", and moving a slider while paused re-runs only the display pass. Restart switches the rig off and on again, because a feedback loop cannot be rewound.',
     'The frame store is RGBA16F here and in the plugin, but the browser reaches it through EXT_color_buffer_float rather than desktop GL. A machine without that extension gets an error rather than a quietly quantised picture — 8 bits mid-loop would clip the signal at both ends every field, which is a hard knee in the wrong place.',
     'Beat and Bar lock to a 120 BPM transport generated in this page, which is the tempo the plugin falls back to when a host reports none. Resolume would supply its own. Manual stops the camera entirely, exactly as in the host.',
-    'The clip picker only does anything in Escapement Feedback, and only when Inject is set to Clip — the source has no input at all (SetMinInputs is 0), and in the effect the clip is an injection INTO the loop rather than a backdrop behind it.',
+    'The clip picker only does anything in Escapement Feed, and only when Inject is set to Clip — the source has no input at all (SetMinInputs is 0), and in the effect the clip is an injection INTO the loop rather than a backdrop behind it.',
     'Preset is an option parameter in the plugin, with Custom as element 0 and a slider edit dropping back to it. Here the same twelve presets are in the panel header instead, from the plugin\'s own table.',
     'Deep zoom may be COARSER here than in the plugin, and there is no way to ask a browser not to. The Extended precision setting gets its extra bits from Dekker\'s split, which is only a no-op if the compiler is forbidden to reassociate it — the plugin forbids it with GLSL\'s `precise` keyword, and GLSL ES 3.00 does not have that keyword at all, so the port strips it. A browser that reassociates will render a deep zoom in visible blocks where the plugin renders detail. Everything at ordinary magnifications is unaffected.',
   ],
@@ -1953,7 +1953,7 @@ mountDemo({
     {
       id: 'maskMode', name: 'Mask Mode', type: 'option', default: 0, group: 'Output',
       elements: MASK_NAMES,
-      hint: 'How the loop\'s picture meets the clip. Escapement Feedback only — the source declares it too, so a composition moved between the two does not find its parameter list has shifted.',
+      hint: 'How the loop\'s picture meets the clip. Escapement Feed only — the source declares it too, so a composition moved between the two does not find its parameter list has shifted.',
     },
     { id: 'mix', name: 'Mix', type: 'standard', default: 1.0, group: 'Output', display: pct },
   ],

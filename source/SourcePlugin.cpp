@@ -17,6 +17,12 @@
 
         nm -gU Escapement.bundle/Contents/MacOS/Escapement | grep plugMain
 */
+/// The name the host shows. See EffectPlugin.cpp: FFGL's PluginInfoStruct has
+/// `char PluginName[ 16 ]` and does not null-terminate it.
+constexpr char kPluginName[] = "Escapement";
+static_assert( sizeof( kPluginName ) - 1 <= 16,
+               "FFGL truncates the plugin name at 16 characters" );
+
 namespace
 {
 class EscapementSource : public escapement::EscapementPlugin
@@ -32,7 +38,7 @@ public:
 static CFFGLPluginInfo PluginInfo(
 	PluginFactory< EscapementSource >,                          // Create method
 	"ES01",                                                     // Plugin unique ID of maximum length 4
-	"Escapement",                                               // Plugin name
+	kPluginName,                                                // Plugin name
 	2,                                                          // API major version number
 	1,                                                          // API minor version number
 	0,                                                          // Plugin major version number
