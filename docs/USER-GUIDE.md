@@ -10,7 +10,7 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 
 *The Mirror Tunnel preset. Every edge in it is the frame's own edge, re-photographed.*
 
-> **Before you rely on this:** the tap sets are checked against their published constants —
+> **This is v0.1.0, the first release.** The tap sets are checked against their published constants —
 > Sierpinski's three maps contract by exactly 0.500, Koch's four by 0.333, the Heighway dragon's
 > two by 0.707, and Barnsley's first map is confirmed singular, as published. Sixty trips round
 > the loop produce a bit-identical frame whether they arrive as sixty frames of one or one frame
