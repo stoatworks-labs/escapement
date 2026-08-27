@@ -294,6 +294,22 @@ drift gate for CI and release, and it has been passing vacuously. Escapement's
 `ES01` source, `ES02` effect. Checked against every other ID in `~/Projects/
 resolume` before choosing.
 
+## Published (2026-08-27)
+
+- **v0.1.2**, signed and notarised: universal macOS bundle, Windows x64 DLL,
+  disk image and installer.
+- Video: `https://www.youtube.com/watch?v=Ny12MsnFOmM` (68s).
+- Reel: `https://www.instagram.com/reel/DciK36OkfTE/`.
+- Demo live at `https://escapement-demo.stoatworks-labs.com`.
+- The v0.1.1 cut and its Reel were **deleted** -- they showed the over-fed
+  presets. The footage is a render rather than a screen recording (Escapement
+  has no window of its own), driven by `tools/video.cues` in this repo, so
+  re-cutting it after a retune is a re-run rather than a re-shoot. **The cue
+  sheet sets Inject Level explicitly at four points and had to be retuned with
+  the presets**, or the new video would have shown the old look.
+- Version embeds: CMakeLists and vcpkg.json both still said 0.1.0 at v0.1.1,
+  so those binaries reported the wrong version in their About block. Bumped.
+
 ## The boxes, and what they actually were (2026-08-27)
 
 Reported as "squares of noise around the shapes on some of the presets". They
