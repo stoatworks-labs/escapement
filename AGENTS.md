@@ -116,6 +116,45 @@ Two things about it are easy to get wrong:
   frames of one use sixty — the picture then depends on the host's frame rate,
   which is the one thing this plugin promises it does not. `--rate` caught it.
 
+### Autonomous life is a chroma instability, and a delay is not the answer
+
+`Drift` keeps a rig alive by moving the operator's hands. There is a second way,
+which needs no operator, and it is worth knowing which one it is because the
+obvious candidate is wrong.
+
+**What works: chroma gain above unity.** Saturation over 1 amplifies whatever
+colour deviation a pixel has; `Focus` spreads it to the neighbours; the clip
+stops it running away. Local gain, lateral coupling, a ceiling — a
+reaction-diffusion system, whose domains are *colours*. It produces labyrinthine
+patterns that keep reorganising indefinitely with every knob held still. That is
+the whole of `Cell Structures`, and the band is narrow: 1.0 collapses to a dot,
+1.1 patterns coarsely, 1.4 gives fine domains, 1.6 floods.
+
+The garish magenta-and-green is not a fault to be tuned out. **The colour is the
+mechanism** — the preset was first written with the saturation pulled down to
+0.7 to calm it, and at 0.7 there is no reaction term and the picture dies.
+
+**What does not work: a delay in the light path.** A real camera-to-screen path
+is two to four fields long, and a delayed feedback loop with a saturating
+amplifier ought to lose its stable fixed point and oscillate — that is the Ikeda
+map, a model of light going round a ring cavity, which is exactly what this is.
+It was built: the ring store, the second sampler, the control. It did nothing.
+At best 0.00013 structural motion against 0.0, and a settled picture differed by
+0.005 between one field of latency and four.
+
+Two reasons, both plain afterwards:
+
+- **Ikeda's nonlinearity is non-monotonic and a soft clip is not.** Monotone
+  saturation with positive feedback is bistable: it settles at the ceiling and
+  stays there. Sustained oscillation needs a fold or a sign reversal.
+- **At a fixed point, every delayed copy is identical by definition.** A delay
+  cannot change a picture that has already converged. It only alters transients,
+  which is precisely the part of the run nobody is watching.
+
+It was removed rather than shipped as a control costing a full float frame per
+field of delay — 350 MB at 4K — to change nothing. If anyone brings it back, the
+missing ingredient is a non-monotonic proc amp, not more delay.
+
 ### The taps sum. Averaging them deletes the attractor
 
 `acc / tapCount` is the normalisation everyone reaches for and it is fatal. A

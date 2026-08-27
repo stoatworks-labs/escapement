@@ -344,22 +344,41 @@ inline constexpr Preset kPresets[] = {
 	    -1.0f, -1.0f,
 	    0.0f, 0.0f,
 	    0.300f, // zoom 0.9955 -- pulled back a hair, so the frame edge drains it
-	    0.540f,
+	    0.699f, // rotate 0.01 rad per field -- and it is NOT decoration. Without
+	            // it the pattern has nothing stirring it, the domains lock, and
+	            // the whole thing collapses to a dot within a few hundred fields.
+	            // Found by setting it to zero and watching that happen.
 	    0.5f, 0.5f,
-	    0.18f,  // focus 0.9 -- soft, but not softer than the gain can rebuild
-	    0.42f,  // a little barrel
-	    0.28f,
-	    0.660f, // gain 1.056 -- over unity, held there by the clip and the edge loss
-	    0.48f,
+	    0.200f, // focus 1.0 -- the diffusion term. Soft enough to couple
+	            // neighbouring pixels, sharp enough that the gain can rebuild
+	            // what it blurs away
 	    0.5f,
+	    0.10f,
+	    0.660f, // gain 1.056 -- just over unity, and the whole preset is this
+	            // number. This is a reaction-diffusion system: local gain above
+	            // one, lateral coupling from the blur, and a low ceiling to stop
+	            // it. What comes out is a Turing pattern -- labyrinthine domains
+	            // that keep reorganising. The band is NARROW: at 1.048 it
+	            // collapses to a dot and at 1.15 it saturates to a flat field.
+	    0.5f, 0.5f,
 	    0.700f, // hue 0.004 per field
-	    0.68f,
-	    0.643f, // clip 0.75 -- a low ceiling, so it saturates into shapes
-	    0.14f,  // more grain: with nothing injected it is the only seed there is
-	    0.0f,   // no persistence -- it is what flattens a Turing pattern into a wash
-	    0.0f,   // nothing injected: the loop finds its own picture
+	    0.700f, // saturation 1.40 -- ABOVE UNITY, and this is the reaction term.
+	            // The instability is in the CHROMA, not the luma: chroma gain
+	            // over one amplifies whatever colour deviation a pixel has, the
+	            // blur spreads it to its neighbours, and the clip stops it. That
+	            // is a reaction-diffusion system, and its domains are colours.
+	            // Below 1.0 there is no reaction and the picture collapses to a
+	            // dot -- 1.00 dies, 1.1 patterns coarsely, 1.4 gives fine domains. Found by
+	            // bisecting it, after the preset was first written at 0.7 on the
+	            // assumption that the garish colour was a fault to be tuned out.
+	            // The colour IS the mechanism.
+	    0.500f, // clip 0.65
+	    0.25f,  // noise -- the forcing. With nothing injected this is the only
+	            // thing feeding the loop, and it is what the pattern grows from
+	    0.0f,   // no persistence: it smooths the domain walls away
+	    0.0f,   // inject: nothing. The loop finds its own picture
 	    0.0f, -1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.55f, 0.600f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f, 0.20f, 0.520f } },
 
 	//-------------------------------------------------------------------
 	// Zoom and rotation together, which is what turns a tunnel into a

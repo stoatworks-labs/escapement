@@ -36,6 +36,8 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - A hostile rig leaves no NaN: `./build/esctest --guard`
 - Every preset draws something with structure in it: `./build/esctest --presets`
 - Every preset is still MOVING once settled: `./build/esctest --liveness`
+- Chroma gain above unity is what keeps a rig alive: `./build/esctest --reaction`
+- How alive is one rig? `./build/esctest --motion --preset 11`
 - No dead controls: `python3 tools/sweep.py`
 
 ## Notes
@@ -57,6 +59,16 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
   itself for ever. Endless zoom does not help — a self-similar attractor
   magnified is the same attractor. **Drift** is the only thing that keeps a rig
   alive, it is on by default in every preset, and `--liveness` is the test.
+- **Autonomous life is a CHROMA instability, not a delay.** Saturation above
+  unity is the reaction term, Focus is the diffusion, and the clip is the
+  ceiling: that is a reaction-diffusion system whose domains are colours. It is
+  what `Cell Structures` is. Below 1.0 chroma gain the same rig collapses to a
+  dot — `--reaction` is the pair that proves it.
+- **A loop delay was tried and removed.** Latency ought to destabilise a loop
+  (Ikeda), and it measurably does not here: a soft clip is monotone, so positive
+  feedback through it is bistable and settles, and at a fixed point every delayed
+  copy is identical anyway. It cost a float frame per field of delay and moved a
+  settled picture by 0.005. See AGENTS.md.
 - **Drift depth scales with the rig's compliance, `1 - c`.** A camera nudge moves
   an attractor by about `t/(1-c)`, which spans two orders of magnitude between
   Sierpinski (stiff) and a mirror rig at 0.98 (compliant). One depth cannot serve

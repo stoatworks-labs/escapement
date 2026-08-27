@@ -146,6 +146,42 @@ from before the tunnel finding, so its loop filled to a uniform field and the
 sphere came out as a flat magenta ball. A rescan needs something to WRAP, and a
 loop that has filled has no texture left in it.
 
+## The delay that did nothing, and the instability that did (2026-08-27)
+
+`Cell Structures` was the last weak preset — stable, but flat wedges rather than
+cells — and the proposed fix was a **loop delay**: a real light path is two to
+four fields long, and a delayed loop with a saturating amplifier should lose its
+fixed point and oscillate (Ikeda). Built it properly: ring store, a second
+sampler so the taps read the delayed field while persistence reads the newest
+(without that split, a delay of 2 gives `x[n] = f(x[n-2])`, two independent
+interleaved sequences that flicker), the control, the memory budget.
+
+**It did nothing.** A scan across delay 1..4 and gain gave at best 0.00013
+structural motion, and a settled picture moved by 0.005 between one field of
+latency and four. Two reasons: a soft clip is monotone, and monotone saturation
+under positive feedback is bistable rather than oscillatory; and at a fixed point
+every delayed copy is identical, so a delay can only change transients. Reverted.
+
+The scan did find the real mechanism, in the column I had not been looking at.
+Motion appeared when the loop was near unity gain with noise and blur — and
+bisecting the difference between a configuration that patterned and one that
+died isolated it to **saturation**: 1.0 dies, 1.1 patterns, 1.4 gives fine
+domains. It is a **chroma instability**. Chroma gain above one is the reaction
+term, Focus is the diffusion, the clip is the ceiling, and the domains are
+colours. `Cell Structures` is now that, and it is a proper labyrinthine Turing
+pattern that reorganises for ever with the hands off.
+
+Three hours of it went on chasing a hypothesis that measurement killed in ten
+minutes once the right thing was measured. The lesson worth keeping is the
+shape of `--reaction`: a mechanism test is a PAIR, one setting that must work and
+one that must fail, or it only proves that something moved.
+
+Two smaller traps in the same session: the preset first read `Saturation=0.7` as
+a colour choice when it was the mechanism, and the working scan configuration
+inherited three defaults I had not set (`rotate` among them) which the preset
+then zeroed — comparing a preset against a `--set` run means comparing every
+value, not the ones that were typed.
+
 ## sync.sh cannot see any repo (found 2026-08-27, NOT fixed)
 
 `stoatworks-backend/resolume-demo/sync.sh` computes

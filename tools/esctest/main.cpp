@@ -730,6 +730,114 @@ std::vector< double > coarse( const std::vector< unsigned char >& rgba, int widt
 	return out;
 }
 
+/// Settle the rig, then measure how much STRUCTURE changes per `stride` fields.
+/// Returns the block-averaged mean absolute difference; grain cancels.
+double structureMotion( EscapementPlugin& plugin, const Target& target, int settle, int window, int stride )
+{
+	run( plugin, target, settle, 8 );
+
+	std::vector< double > previous = coarse( readBytes( target ), target.width, target.height );
+	double total = 0.0;
+
+	for( int k = 0; k < window; ++k )
+	{
+		run( plugin, target, stride, 8 );
+		const std::vector< double > now = coarse( readBytes( target ), target.width, target.height );
+
+		double blocks = 0.0;
+		for( size_t b = 0; b < now.size(); ++b )
+			blocks += std::abs( now[ b ] - previous[ b ] );
+
+		total += blocks / double( now.size() );
+		previous = now;
+	}
+
+	return total / double( window );
+}
+
+/**
+    The reaction: what actually keeps a rig alive with the operator's hands off.
+
+    A **chroma instability**. Saturation above unity amplifies whatever colour
+    deviation a pixel has, the defocus spreads it to its neighbours, and the clip
+    stops it running away — local gain, lateral coupling, a ceiling, which is a
+    reaction-diffusion system. Its domains are colours, and they keep
+    reorganising instead of settling.
+
+    Written as a pair, because a rig that merely moves proves nothing. The same
+    rig at chroma gain 1.0 has no reaction term and must collapse; at 1.4 it must
+    pattern. If the first half ever stops failing, something else is supplying
+    the life and the second half no longer means anything.
+
+    ## What this replaced
+
+    A test of the opposite hypothesis, which was wrong. A delay in the light path
+    ought to destabilise a loop — that is the Ikeda map, light going round a ring
+    cavity — so `Loop Delay` was built, the ring store with it, and it did
+    nothing measurable: 0.00013 against 0.0 at best, and the picture of a settled
+    rig moved by 0.005 between one field of latency and four.
+
+    Two reasons, both obvious afterwards. Ikeda's nonlinearity is **non-monotonic**
+    and a soft clip is not: monotone saturation with positive feedback is
+    bistable, so it settles at the ceiling. And at a fixed point every delayed
+    copy is identical by definition, so a delay cannot change a picture that has
+    already converged — it can only alter transients.
+
+    The delay was removed rather than shipped as a control that costs a float
+    frame per field and does nothing. The measurement is kept here.
+*/
+void testReaction( const Target& target )
+{
+    printf( "\n== reaction (drift OFF, nothing injected)\n" );
+
+    auto build = []( EscapementPlugin& plugin, const char* saturation ) {
+        applySetting( plugin, "Drift=0.0" );      // hands off
+        applySetting( plugin, "Gain=0.660" );     // 1.056, just over unity
+        applySetting( plugin, "Clip=0.5" );
+        applySetting( plugin, "Decay=0.0" );
+        applySetting( plugin, "Zoom=0.30" );
+        applySetting( plugin, "Focus=0.20" );     // the diffusion term
+        applySetting( plugin, "Vignette=0.10" );
+        applySetting( plugin, "Inject=0" );       // nothing but the loop's own grain
+        applySetting( plugin, "Noise=0.25" );
+        applySetting( plugin, saturation );
+    };
+
+    double flat  = 0.0;
+    double alive = 0.0;
+
+    {
+        EscapementPlugin plugin( false );
+        if( !prepare( plugin, target.width, target.height ) )
+            return;
+        build( plugin, "Saturation=0.50" );  // chroma gain exactly 1.0
+        flat = structureMotion( plugin, target, 400, 6, 60 );
+        plugin.DeInitGL();
+    }
+
+    {
+        EscapementPlugin plugin( false );
+        if( !prepare( plugin, target.width, target.height ) )
+            return;
+        build( plugin, "Saturation=0.70" );  // chroma gain 1.4
+        alive = structureMotion( plugin, target, 400, 6, 60 );
+        plugin.DeInitGL();
+    }
+
+    char label[ 200 ];
+    // The same 0.004 the liveness test uses: below it a minute of the rig is a
+    // still frame. At unity chroma gain there is still a little churn from the
+    // grain being injected, and it is well under that line.
+    snprintf( label, sizeof( label ), "chroma gain 1.0 has no reaction and dies (%.4f)", flat );
+    check( flat < 0.004, label );
+
+    snprintf( label, sizeof( label ), "chroma gain 1.4 patterns and keeps going (%.4f)", alive );
+    check( alive > 0.006, label );
+
+    snprintf( label, sizeof( label ), "the chroma gain is what did it (%.1fx)", flat > 1e-6 ? alive / flat : 999.0 );
+    check( alive > flat * 4.0, label );
+}
+
 void testLiveness( const Target& target, int settle, int window, int stride )
 {
 	printf( "\n== liveness (structure change per %d fields, after %d settle)\n", stride, settle );
@@ -745,36 +853,7 @@ void testLiveness( const Target& target, int settle, int window, int stride )
 		if( preset != byName.end() )
 			plugin.SetFloatParameter( preset->second, float( i + 1 ) );
 
-		run( plugin, target, settle, 8 );
-
-		std::vector< double > previous = coarse( readBytes( target ), target.width, target.height );
-		std::vector< unsigned char > previousFine = readBytes( target );
-
-		double totalFine = 0.0;
-		double totalCoarse = 0.0;
-
-		for( int k = 0; k < window; ++k )
-		{
-			run( plugin, target, stride, 8 );
-			const std::vector< unsigned char > nowFine = readBytes( target );
-			const std::vector< double > now = coarse( nowFine, target.width, target.height );
-
-			double fine = 0.0;
-			for( size_t b = 0; b < nowFine.size(); ++b )
-				fine += std::abs( int( nowFine[ b ] ) - int( previousFine[ b ] ) );
-			totalFine += fine / double( nowFine.size() ) / 255.0;
-
-			double blocks = 0.0;
-			for( size_t b = 0; b < now.size(); ++b )
-				blocks += std::abs( now[ b ] - previous[ b ] );
-			totalCoarse += blocks / double( now.size() );
-
-			previous = now;
-			previousFine = nowFine;
-		}
-
-		const double motion = totalFine / double( window );
-		const double structure = totalCoarse / double( window );
+		const double structure = structureMotion( plugin, target, settle, window, stride );
 
 		// Measured across a STRIDE of fields, not between consecutive ones.
 		//
@@ -796,8 +875,8 @@ void testLiveness( const Target& target, int settle, int window, int stride )
 		// something the eye would call motion survives. That is the number the
 		// complaint was about.
 		char label[ 200 ];
-		snprintf( label, sizeof( label ), "%-16s moves %.4f  structure %.4f",
-		          presets::kPresets[ i ].name, motion, structure );
+		snprintf( label, sizeof( label ), "%-16s structure %.4f",
+		          presets::kPresets[ i ].name, structure );
 		check( structure > 0.004, label );
 
 		plugin.DeInitGL();
@@ -821,6 +900,8 @@ void usage()
 	        "  --stability       loop gain predicts the picture\n"
 	        "  --guard           a hostile rig leaves no NaN\n"
 	        "  --liveness        the rigs are still moving once settled\n"
+	        "  --reaction        chroma gain above unity is what keeps a rig alive\n"
+	        "  --motion          print how alive the current rig is, and exit\n"
 	        "  --all             every check above\n" );
 }
 
@@ -844,6 +925,8 @@ int main( int argc, char** argv )
 	bool doGuard = false;
 	bool doPre   = false;
 	bool doLive  = false;
+	bool doCav   = false;
+	bool doMotion = false;
 
 	for( int i = 1; i < argc; ++i )
 	{
@@ -888,8 +971,12 @@ int main( int argc, char** argv )
 			doPre = true;
 		else if( arg == "--liveness" )
 			doLive = true;
+		else if( arg == "--reaction" )
+			doCav = true;
+		else if( arg == "--motion" )
+			doMotion = true;
 		else if( arg == "--all" )
-			doNames = doTaps = doRate = doStab = doGuard = doPre = doLive = true;
+			doNames = doTaps = doRate = doStab = doGuard = doPre = doLive = doCav = true;
 		else
 		{
 			usage();
@@ -916,6 +1003,36 @@ int main( int argc, char** argv )
 	}
 
 	Target target = makeTarget( width, height );
+
+	//-----------------------------------------------------------------------
+	// How alive is THIS rig? Applies --preset and --set, settles, and prints the
+	// structural motion. The scanning tool behind every liveness decision here:
+	// theorising about which nonlinearity ought to oscillate turned out to be a
+	// poor guide, and measuring a grid of settings was a much better one.
+	//-----------------------------------------------------------------------
+	if( doMotion )
+	{
+		EscapementPlugin plugin( effect );
+		if( !prepare( plugin, width, height ) )
+			return 1;
+
+		const std::map< std::string, unsigned int > byName = parameterIndex( plugin );
+		if( preset > 0 )
+		{
+			const auto found = byName.find( "Preset" );
+			if( found != byName.end() )
+				plugin.SetFloatParameter( found->second, float( preset ) );
+		}
+		for( const std::string& setting : settings )
+			if( !applySetting( plugin, setting ) )
+				return 1;
+
+		printf( "%.5f\n", structureMotion( plugin, target, 400, 6, 60 ) );
+		plugin.DeInitGL();
+		releaseTarget( target );
+		CGLDestroyContext( context );
+		return 0;
+	}
 
 	if( doNames || doList || !outPath.empty() )
 	{
@@ -1032,6 +1149,8 @@ int main( int argc, char** argv )
 		testPresets( target );
 	if( doLive )
 		testLiveness( target, 400, 8, 60 );
+	if( doCav )
+		testReaction( target );
 
 	releaseTarget( target );
 	CGLDestroyContext( context );
