@@ -145,6 +145,17 @@ step "harness"
 step "demo shaders"
 python3 demo/tools/check_shaders.py
 
+#---------------------------------------------------------------------------
+# The demo's presets are the plugin's presets.
+#
+# Same table, written out twice by hand: an initialiser list in Presets.h and a
+# camelCase object in plugin.js. A preset retuned on one side and not the other
+# is silent -- the plugin gets the new look and the deployed demo goes on
+# showing the old one. This compares them value by value.
+#---------------------------------------------------------------------------
+step "demo presets"
+python3 demo/tools/check_presets.py
+
 step "no dead controls"
 python3 tools/sweep.py --build "$( basename "$BUILD" )"
 
