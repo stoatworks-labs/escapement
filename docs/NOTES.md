@@ -211,6 +211,60 @@ which suits the broad bands of a 1:1 view and posterises a 1e6 zoom -- where
 almost every pixel is near the boundary -- into flat orange and black. Julia
 keeps Ember, where the bands really are broad.
 
+## First contact with Arena, both platforms (2026-08-27)
+
+Tested in Resolume Arena 7.27.1 on macOS, and on the win-lab VM under Mesa
+llvmpipe via `plugin-bench/arena`. The expectation file is
+`plugin-bench/arena/expect/escapement.json`.
+
+**It found one shipped bug immediately, before anything was even driven.** The
+effect's own NAME was truncated: FFGL's `PluginInfoStruct` carries
+`char PluginName[16]`, not null terminated, and "Escapement Feedback" is
+nineteen. Arena's log is the only place it is visible --
+`registered extension: 'Escapement Feedb'` -- because the SDK takes the name as
+a `const char*`, stores what it likes and never complains. Renamed to
+"Escapement Feed" and guarded with a `static_assert` in both registration
+files. `esctest --names` checks PARAMETER names for exactly this limit and
+cannot reach this one: the plugin's name is not a parameter.
+
+Everything else passed on both hosts:
+
+- Loads and registers with the right uid and category (3 source, 1 effect).
+- 52 controls, matching name, order, type, range and default against the
+  plugin's own declarations.
+- The only names at the 16-character limit are the shared About buttons, both
+  complete.
+- Renders real content (std 66.8), and the picture keeps changing -- 28 levels
+  of frame delta over three seconds, which is the drift work confirmed in the
+  host rather than in the harness.
+- The effect takes a clip, and `Inject = Clip` really does feed the footage into
+  the loop.
+- Mesa's GLSL compiler accepts the shaders, which is genuine evidence about the
+  source that macOS alone cannot give. It says nothing about NVIDIA or AMD.
+- The plugin's own log confirms `host clock is milliseconds`, so the clock-unit
+  detection is doing its job in the real host.
+
+Windows gate: **15 passed, 0 failed, 0 skipped.**
+
+### Arena restarts on its own on win-lab, and the gate cannot see it
+
+The first gate run died mid-sweep with the REST API refusing connections, and
+Arena's log ended abruptly -- which fleet-notes calls the signature of a crash.
+It was not this plugin:
+
+- No BugSplat dump was ever written, for any of the restarts.
+- Sweeping all 52 controls by hand, every option and both extremes, killed
+  nothing.
+- Mounting the plugin eight times over does not leak: Arena's memory FALLS,
+  2502 MB to 1460 MB.
+- The full gate then ran clean end to end.
+
+Arena's launch history on that box reads 01:56, 02:13, 02:40 -- and the 02:40
+restart happened **during the gate run that reported "Arena survived the run"**.
+The gate checks liveness at the end, so a restart mid-run passes it: a real
+crash in the middle of a sweep would be reported as a pass. That is worth
+fixing in the bench, and it is worth knowing before trusting an `alive` PASS.
+
 ## sync.sh cannot see any repo (found 2026-08-27, NOT fixed)
 
 `stoatworks-backend/resolume-demo/sync.sh` computes
