@@ -134,6 +134,17 @@ done
 step "harness"
 "$BUILD/esctest" --all
 
+#---------------------------------------------------------------------------
+# The demo's GLSL is the plugin's GLSL.
+#
+# plugin.js cannot include a C++ file, so the two copies are two files that
+# happen to agree — and a change to Shaders.cpp that is not mirrored is
+# invisible until somebody notices the demo behaving differently from the
+# plugin. This compares them character for character.
+#---------------------------------------------------------------------------
+step "demo shaders"
+python3 demo/tools/check_shaders.py
+
 step "no dead controls"
 python3 tools/sweep.py --build "$( basename "$BUILD" )"
 

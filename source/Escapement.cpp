@@ -78,11 +78,19 @@ EscapementPlugin::EscapementPlugin( bool overInput ) :
 	// Set BEFORE the parameters are declared, because SetOptionParamInfo takes
 	// the default as an argument and reads it from here.
 	//
-	// The opening position is the Mirror Tunnel preset, and it is chosen rather
-	// than inherited: a feedback rig at its neutral settings -- unity gain, no
-	// zoom, nothing injected -- is a black frame, and a plugin that shows
-	// nothing when you drop it on a layer reads as broken. Every default below
-	// is a working rig.
+	// The opening position is the Mirror Tunnel preset, VALUE FOR VALUE, and it
+	// is chosen rather than inherited: a feedback rig at its neutral settings --
+	// unity gain, no zoom, nothing injected -- is a black frame, and a plugin
+	// that shows nothing when you drop it on a layer reads as broken.
+	//
+	// It has to be kept in step with that preset by hand, and it was not: the
+	// preset was retuned and these were left behind, so the plugin shipped
+	// opening on a rig running at 1.28 round the loop that saturated to a flat
+	// white frame within two seconds -- the OTHER way a feedback plugin reads as
+	// broken. The browser demo is what made it obvious, because a demo shows the
+	// defaults and nothing else until you touch something.
+	//
+	// If you retune "Mirror Tunnel" in Presets.h, retune these with it.
 	//-----------------------------------------------------------------------
 	params[ PT_RIG ]         = static_cast< float >( Rig::Mirror );
 	params[ PT_TAPS ]        = 0.30f;   // 4 taps, for the rigs that choose
@@ -91,28 +99,28 @@ EscapementPlugin::EscapementPlugin( bool overInput ) :
 	params[ PT_FOLD_MIRROR ] = 0.0f;
 	params[ PT_FIELD_RATE ]  = 0.782f;  // 60 fields a second
 
-	params[ PT_ZOOM ]     = 0.792f;     // 1.02 per field
+	params[ PT_ZOOM ]     = 0.208f;     // 0.98 per field -- BELOW one, see below
 	params[ PT_ROTATE ]   = 0.699f;     // 0.01 rad per field
 	params[ PT_PAN_X ]    = 0.5f;       // exactly zero
 	params[ PT_PAN_Y ]    = 0.5f;
 	params[ PT_SYNC ]     = static_cast< float >( Sync::Free );
 	params[ PT_SPEED ]    = 0.5f;       // exactly 1.0
-	params[ PT_FOCUS ]    = 0.160f;     // 0.8 mip levels
+	params[ PT_FOCUS ]    = 0.040f;     // 0.2 mip levels
 	params[ PT_LENS ]     = 0.5f;       // exactly zero
-	params[ PT_VIGNETTE ] = 0.35f;
+	params[ PT_VIGNETTE ] = 0.08f;
 
-	params[ PT_GAIN ]       = 0.615f;   // 0.984 -- just under unity
+	params[ PT_GAIN ]       = 0.600f;   // 0.96
 	params[ PT_PEDESTAL ]   = 0.5f;     // exactly zero
 	params[ PT_GAMMA ]      = 0.5f;     // exactly 1.0
 	params[ PT_HUE_ROTATE ] = 0.658f;   // 0.002 turns per field
 	params[ PT_SATURATION ] = 0.55f;    // 1.1
 	params[ PT_CLIP ]       = 0.786f;   // 0.85
 	params[ PT_NOISE ]      = 0.0f;
-	params[ PT_DECAY ]      = 0.30f;
+	params[ PT_DECAY ]      = 0.050f;   // 0.049 -- 1.01 round the loop
 
-	params[ PT_INJECT ]       = static_cast< float >( Inject::Dot );
-	params[ PT_INJECT_LEVEL ] = 0.869f; // 1.0
-	params[ PT_INJECT_SIZE ]  = 0.500f; // 0.12 of the short edge
+	params[ PT_INJECT ]       = static_cast< float >( Inject::Grid );
+	params[ PT_INJECT_LEVEL ] = 0.550f; // 0.19
+	params[ PT_INJECT_SIZE ]  = 0.720f; // 0.37 of the short edge
 	params[ PT_INJECT_X ]     = 0.5f;   // exactly zero
 	params[ PT_INJECT_Y ]     = 0.5f;
 

@@ -19,6 +19,15 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - List parameters: `./build/esctest --list`
 - Set anything by name: `--set "Gain=0.6" --set "Rig=1"`
 
+## Browser demo
+- Serve it: `python3 -m http.server 8794 --directory demo`
+- The shaders are copied from `source/Shaders.cpp`, not rewritten. Prove it:
+  `python3 demo/tools/check_shaders.py`
+- The kit under `demo/vendor/` is vendored from
+  `stoatworks-backend/resolume-demo/kit/` — fix bugs THERE, not here.
+- NOT deployed. `wrangler.toml` is written and untested; the About/project URLs
+  it implies do not exist yet.
+
 ## Verify
 - Everything: `tools/verify.sh`
 - The tap sets against published constants: `./build/esctest --taps`
@@ -62,6 +71,12 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - `escapement_core` is an OBJECT library, not STATIC — the plugin registers
   itself from a file-scope constructor nothing references by name.
 - macOS build must be universal. Verify with `lipo`, never the build log.
+- **The constructor defaults ARE the Mirror Tunnel preset, by hand.** They went
+  out of step once — the preset was retuned and the defaults were not, so the
+  plugin opened on a rig at 1.28 round the loop that saturated to white. Retune
+  one, retune the other.
+- **GLSL ES 3.00 has no `precise`**, so the browser demo's port strips it and a
+  deep zoom there may be coarser than in the plugin. Disclosed on the page.
 - Public repo. "Commit" = commit **and** push.
 
 ## Not done yet
@@ -70,7 +85,8 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
   orrery, but Escapement's picture is a GPU feedback loop and an OFX host wants
   a CPU render of an arbitrary frame in arbitrary order — which a loop with
   history cannot answer without being reimplemented. Deliberately deferred.
-- **Web demo, CI, Windows build, plugin-bench expectation.**
+- **CI, Windows build, plugin-bench expectation.** The web demo exists and runs
+  locally; it has never been deployed.
 - **`StoatworksAbout.h` is a hand-written placeholder.** Escapement has no entry
   in the website's `projects.json`, so `sync-about.py` cannot generate it and
   the four About buttons point at pages that do not exist yet.

@@ -81,6 +81,52 @@ the bank's controls were invisible under a saturating loop (needs `Gain=0`), and
 and *both* precisions go flat. `Field Rate` is excluded outright — it cannot
 change a render whose field count is pinned, which is what pinning means.
 
+## The browser demo (2026-08-27)
+
+Built on the shared kit from `stoatworks-backend/resolume-demo`. Four findings.
+
+**GLSL ES 3.00 has no `precise` keyword.** It arrived in ES only at 3.20, so
+WebGL2 rejects the double-float code outright with "'precise' : undeclared
+identifier" and a syntax error on the type after it. Handled in the kit's
+`port()`, which is where the 410-core-to-ES-3.00 differences live — but it is
+the only thing `port()` does that **removes a guarantee rather than translating
+a spelling**, because a compiler that reassociates Dekker's split leaves 24 bits
+where the plugin has 48. Disclosed on the page rather than papered over.
+
+**The constructor defaults had gone stale, and the demo is what showed it.** The
+Mirror Tunnel preset was retuned during the first session and the defaults were
+left behind, so the plugin opened on a rig running at 1.28 round the loop that
+saturated to a flat white frame in about two seconds. Nothing in `verify.sh`
+looked at the defaults — every preset test applies a preset first. A demo shows
+the defaults and nothing else until you touch something, which is exactly the
+case the test suite had no coverage for.
+
+**The demo is the fleet's only STATEFUL demo page.** Every other one renders a
+pure function of (parameters, time). Here the loop advances on elapsed time, so
+a redraw from moving a slider while paused runs no fields, and Restart clears
+the store because a feedback loop cannot be rewound.
+
+**Two Browser-pane traps cost time, both already in fleet-notes.** A hidden or
+non-painting pane throttles `requestAnimationFrame` to nothing, so a stateful
+page is silently *under-run* and looks wrong when it is only paused — force
+paints with repeated screenshots before judging the picture. And a full-page
+screenshot scrolls the document: with a `<select>` focused, that scroll changes
+its value, so the rig silently switched from Mirror to Kaleidoscope between two
+reads and looked like a wandering-parameter bug. Blur the active element first.
+
+## sync.sh cannot see any repo (found 2026-08-27, NOT fixed)
+
+`stoatworks-backend/resolume-demo/sync.sh` computes
+`projects="$(cd "${here}/../.." && pwd)"`, which after the repo reorganisation
+resolves to `~/Projects/infrastructure` — but the plugin repos are under
+`~/Projects/resolume`. Every one of its 17 entries hits the `no demo/` branch
+and is skipped.
+
+`--check` therefore prints "kit is in sync across 17 repo(s)" and **exits 0
+while comparing nothing**, which is the failure mode that matters: it is the
+drift gate for CI and release, and it has been passing vacuously. Escapement's
+`demo/vendor/` was copied by hand for that reason.
+
 ## Plugin IDs
 
 `ES01` source, `ES02` effect. Checked against every other ID in `~/Projects/
@@ -92,7 +138,8 @@ resolume` before choosing.
   but an OFX host renders arbitrary frames in arbitrary order, and a loop with
   history cannot answer that without being reimplemented as something else.
   Deliberately deferred rather than half-built.
-- **No web demo, CI, Windows build or plugin-bench expectation** yet.
+- **No CI, Windows build or plugin-bench expectation** yet. The web demo exists
+  and runs locally; it has never been deployed, and `wrangler.toml` is untested.
 - **`source/StoatworksAbout.h` is hand-written.** Escapement has no entry in the
   website's `projects.json`, so `sync-about.py` cannot generate it. The four
   About buttons point at pages that do not exist. Add the project and re-run the
