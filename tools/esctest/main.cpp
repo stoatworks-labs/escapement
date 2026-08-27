@@ -660,6 +660,22 @@ void testPresets( const Target& target )
 {
 	printf( "\n== presets\n" );
 
+	// Every preset carries drift, and none of them carries zero -- the table in
+	// Presets.h says so, and the plugin depends on it. Checking it here costs
+	// nothing and catches a failure that is otherwise silent and very hard to
+	// see: `float values[ kParamCount ]` with too FEW initialisers is legal
+	// C++, and the compiler zero-fills the tail without a word. A trailing `//`
+	// comment written onto a line that still had values on it did exactly that
+	// -- it commented out the rest of the row, every later value shifted up,
+	// and three presets quietly became something else. They still rendered, so
+	// the "draws" check below passed them; drift landing on zero is the tell.
+	for( int i = 0; i < presets::kCount; ++i )
+	{
+		char label[ 200 ];
+		snprintf( label, sizeof( label ), "%-16s carries drift", presets::kPresets[ i ].name );
+		check( presets::kPresets[ i ].values[ presets::P_DRIFT ] > 0.0f, label );
+	}
+
 	for( int i = 0; i < presets::kCount; ++i )
 	{
 		EscapementPlugin plugin( false );

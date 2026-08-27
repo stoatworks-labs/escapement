@@ -83,7 +83,7 @@
 # Nothing here draws a gasket.
 18.0  Rig=1
 18.0  Inject=4            # noise: the loop's only food
-18.0  Inject Level=0.500
+18.0  Inject Level=0.260  # 0.040 -- grain is the SEED, not the fuel
 18.0  Inject Size=1.0
 18.0  Zoom=0.5            # exactly 1.0 -- the taps supply all the contraction
 18.0  Rotate=0.5          # exactly 0
@@ -92,7 +92,7 @@
 18.0  Noise=0.10
 18.0  Focus=0.088
 18.0  Vignette=0.10
-18.0  Drift=0.35
+18.0  Drift=0.50
 
 # ------------------------------------------------ 26s: the snowflake
 # Four third-scale taps make the Koch CURVE. The three-fold fold -- a mirror
@@ -101,6 +101,8 @@
 26.0  Symmetry=0.18       # 3-fold
 26.0  Gain=0.812          # 1.30: a curve is measure zero and needs more than an area
 26.0  Decay=0.153
+26.0  Inject Level=0.140  # a curve needs less food than an area
+26.0  Drift=0.50
 26.0  Hue Rotate=0.600
 
 # ------------------------------------------------ 33s: a rig from a number
@@ -110,10 +112,10 @@
 33.0  Symmetry=0.0
 33.0  Taps=0.30           # 4 taps
 33.0  Gain=0.594
-33.0  Inject Level=0.300  # quieter grain: at 0.5 it competes with the attractor
+33.0  Inject Level=0.140  # quieter grain: louder and it competes with the attractor
 33.0  Vignette=0.20
 33.0  Palette=4           # spectrum
-33.0  Drift=0.40
+33.0  Drift=0.55
 33.0..39.0  Seed=0.402..0.740
 
 # ------------------------------------------------------ 39s: Julia

@@ -152,9 +152,9 @@ inline constexpr Preset kPresets[] = {
 	    0.10f,  // a little grain, so there is always something to converge from
 	    0.0f,   // no persistence: the attractor is not a trail
 	    4.0f,   // inject: noise
-	    0.500f, // level 0.14
+	    0.260f, // level 0.040
 	    1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.35f, 0.435f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.50f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// Four third-scale taps and a three-fold fold. The taps make the Koch
@@ -175,8 +175,9 @@ inline constexpr Preset kPresets[] = {
 	    0.5f, 0.857f,
 	    0.10f, 0.153f, // a little persistence, so the thin line accumulates
 	    4.0f,   // inject: noise
-	    0.500f, 1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.35f, 0.435f } },
+	    0.140f, // level 0.021
+	    1.0f,
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.50f, 0.435f } },
 
 	{ "Dragon",
 	  { 3.0f,
@@ -188,9 +189,11 @@ inline constexpr Preset kPresets[] = {
 	    0.680f, // gain 1.09
 	    0.5f, 0.5f, 0.640f, 0.5f, 0.857f,
 	    0.10f, 0.0f,
-	    4.0f, 0.500f, 1.0f,
+	    4.0f,   // inject: noise
+	    0.260f, // level 0.021
+	    1.0f,
 	    2.0f,   // Ice
-	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.55f, 0.435f } },
+	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.95f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// Barnsley's fern. One of its four maps is singular -- the stem is a
@@ -251,9 +254,11 @@ inline constexpr Preset kPresets[] = {
 	    0.091f, 0.5f, 0.200f,
 	    0.594f, 0.5f, 0.5f, 0.620f, 0.5f, 0.857f,
 	    0.10f, 0.0f,
-	    4.0f, 0.300f, 1.0f,
+	    4.0f,   // inject: noise
+	    0.140f, // level 0.021
+	    1.0f,
 	    4.0f,   // Spectrum
-	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.40f, 0.435f } },
+	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.55f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// The iterator bank, with c fixed. The loop is still running -- the

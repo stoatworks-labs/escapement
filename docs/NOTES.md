@@ -294,22 +294,62 @@ drift gate for CI and release, and it has been passing vacuously. Escapement's
 `ES01` source, `ES02` effect. Checked against every other ID in `~/Projects/
 resolume` before choosing.
 
-## Published (2026-08-27)
+## The boxes, and what they actually were (2026-08-27)
 
-- **v0.1.1**, signed and notarised: universal macOS bundle, Windows x64 DLL,
-  disk image and installer.
-- Video: `https://www.youtube.com/watch?v=fyqUDXdTyqs` (68s).
-- Reel: `https://www.instagram.com/reel/Dch_ROTip9x/`.
-- Demo live at `https://escapement-demo.stoatworks-labs.com`.
-- The video is a **render, not a screen recording** — Escapement has no window
-  of its own, so its footage comes from `esctest --sequence` driven by
-  `tools/video.cues`, which is in this repo next to the code. One plugin
-  instance for the whole piece, so the frame store carries its history across
-  every change on screen and each section dissolves into the next.
-- The Instagram cover is `docs/instagram-cover.jpg`, and Upload-Post takes a
-  cover only as a public URL at upload time — so it has to be committed and
-  SHA-pinned *before* the post. The Julia beat, because it is the only frame
-  that still reads as a fractal at tile size.
+Reported as "squares of noise around the shapes on some of the presets". They
+were neither squares of noise nor a rendering artefact: they are the **iterates
+of the frame rectangle under the tap set** -- the transient copies the loop is
+still working on before it reaches the attractor -- and they were visible
+because the presets were **over-fed**.
+
+The grain is the SEED, not the fuel. Once the loop gain is above unity the
+attractor sustains itself, and injection only has to give it something to
+converge from as Drift moves it. Sierpinski, Koch and Dragon were all injecting
+at host 0.500, which is a physical 0.14 -- a snowstorm. That did two things at
+once: it lit the transient copies brightly enough to read as boxes, and it
+drove the attractor itself into the clip, so the gasket was a saturated white
+mass with its structure gone.
+
+Dropping the food fixed both. The gasket, the snowflake and the dragon all
+resolve several more levels of self-similarity than they did, because they are
+no longer saturating.
+
+| rig | inject was | now | physical |
+|---|---|---|---|
+| Sierpinski | 0.500 | 0.260 | 0.040 |
+| Koch | 0.500 | 0.140 | 0.021 |
+| Dragon | 0.500 | 0.260 | 0.040 |
+| Seeded | 0.300 | 0.140 | 0.021 |
+
+**Less food costs liveness, and Drift is what buys it back.** Dragon and Seeded
+failed `--liveness` on the first attempt (0.0030 and 0.0036 against a threshold
+of 0.004): with less to re-converge from, a rig settles sooner. Raising Drift
+fixes that *without* re-lighting the boxes, because Drift moves the operator's
+hands and injection lights the picture -- they are separate levers and it is
+worth keeping them separate. Drift went 0.35 -> 0.50 on Sierpinski and Koch,
+0.55 -> 0.95 on Dragon, 0.40 -> 0.55 on Seeded, which also bought margin on the
+two that were already passing by a hair.
+
+**What it was NOT.** The first hypothesis was that the hard `if( uv != clamp(
+uv, 0, 1 ) ) continue;` in the tap loop stamps a knife-edged parallelogram, so
+the fix would be to feather the screen's edge. That is a real physical point --
+a lens does not resolve a screen edge over one texel -- but it is not this bug,
+and the measurement says so: feathering moved the steepest box edge from 144 to
+137 levels/px, which is nothing. **A loop with gain above unity and a
+saturating clip re-sharpens any edge it copies**, so softening the input edge
+cannot survive one trip round. The feather was written, measured, and reverted.
+
+## The trap that broke three presets while fixing them
+
+`float values[ kParamCount ]` with too FEW initialisers is legal C++ and the
+compiler zero-fills the tail in silence. Writing a trailing `// level 0.021`
+onto a row that still had `1.0f,` after it commented out the rest of that row:
+every later value shifted up, and Koch, Dragon and Seeded silently became
+spheres -- they still rendered, so `--presets` passed them.
+
+`--presets` now checks first that **every preset carries non-zero drift**, which
+the table in Presets.h already states as an invariant and which a zero-filled
+tail always violates. Verified by zeroing one and watching it fail.
 
 ## Still open
 
