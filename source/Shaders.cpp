@@ -652,7 +652,18 @@ vec3 Palette( float v )
 	if( PaletteMode == 4 )
 	{
 		vec3 h = clamp( abs( mod( v * 6.0 + vec3( 0.0, 4.0, 2.0 ), 6.0 ) - 3.0 ) - 1.0, 0.0, 1.0 );
-		return h;
+
+		// Faded to black at the bottom, and without this the palette has no
+		// black point at all: hue at v = 0 is full-brightness RED, so every
+		// unlit pixel of a generator whose background is black comes out
+		// orange. The picture then reads as a wash with a fractal somewhere in
+		// it -- which is exactly what the Seeded Rig preset looked like, and it
+		// was the palette rather than the rig the whole time.
+		//
+		// smoothstep rather than a multiply by v: multiplying dims the
+		// mid-tones too and turns a hue sweep into a hue-and-brightness sweep.
+		// This only touches the bottom sixth.
+		return h * smoothstep( 0.0, 0.15, v );
 	}
 
 	return vec3( v );

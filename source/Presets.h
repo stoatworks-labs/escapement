@@ -248,10 +248,10 @@ inline constexpr Preset kPresets[] = {
 	    0.402f, // seed 4021
 	    0.0f, 0.0f,
 	    0.5f, 0.5f, 0.5f, 0.5f,
-	    0.091f, 0.5f, 0.12f,
+	    0.091f, 0.5f, 0.200f,
 	    0.594f, 0.5f, 0.5f, 0.620f, 0.5f, 0.857f,
 	    0.10f, 0.0f,
-	    4.0f, 0.500f, 1.0f,
+	    4.0f, 0.300f, 1.0f,
 	    4.0f,   // Spectrum
 	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.40f, 0.435f } },
 
@@ -330,7 +330,12 @@ inline constexpr Preset kPresets[] = {
 	    3.0f,   // inject: grid, so there is an edge for the camera to find
 	    0.550f, // level 0.19
 	    0.720f, // size 0.37
-	    0.0f,   // palette: the signal's own colour
+	    1.0f,   // Phosphor. NOT the signal's own colour, and the reason is the
+	            // hue rotation: it turns about the LUMA axis, and grey is a fixed
+	            // point of that. A rig injecting a white grid therefore stays
+	            // grey however far the colour walks, and a grey ball with soft
+	            // shading on it reads as a render of nothing. A palette maps the
+	            // luma it does have into something to look at.
 	    1.0f,   // fully spherical
 	    0.611f, // tilt 0.35 rad
 	    0.612f, // spin 0.05 turns a second

@@ -979,6 +979,212 @@ void testLiveness( const Target& target, int settle, int window, int stride )
 	}
 }
 
+struct Cue
+{
+	double from = 0.0;
+	double to   = 0.0;
+	std::string name;
+	float first  = 0.0f;
+	float second = 0.0f;
+	bool ramp    = false;
+};
+
+bool parseCues( const std::string& path, std::vector< Cue >& cues )
+{
+	FILE* file = fopen( path.c_str(), "rb" );
+	if( file == nullptr )
+	{
+		fprintf( stderr, "cannot open cue sheet %s\n", path.c_str() );
+		return false;
+	}
+
+	char line[ 1024 ];
+	int number = 0;
+	while( fgets( line, sizeof( line ), file ) != nullptr )
+	{
+		++number;
+		std::string text = line;
+
+		const size_t hash = text.find( '#' );
+		if( hash != std::string::npos )
+			text = text.substr( 0, hash );
+
+		const size_t firstReal = text.find_first_not_of( " \t\r\n" );
+		if( firstReal == std::string::npos )
+			continue;
+		text = text.substr( firstReal );
+
+		const size_t split = text.find_first_of( " \t" );
+		if( split == std::string::npos )
+			continue;
+
+		const std::string when = text.substr( 0, split );
+		std::string assignment = text.substr( split );
+
+		const size_t assignStart = assignment.find_first_not_of( " \t" );
+		if( assignStart == std::string::npos )
+			continue;
+		assignment = assignment.substr( assignStart );
+		while( !assignment.empty() && ( assignment.back() == '\n' || assignment.back() == '\r'
+		                                || assignment.back() == ' ' || assignment.back() == '\t' ) )
+			assignment.pop_back();
+
+		Cue cue;
+		const size_t timeRange = when.find( ".." );
+		if( timeRange != std::string::npos )
+		{
+			cue.from = std::strtod( when.substr( 0, timeRange ).c_str(), nullptr );
+			cue.to   = std::strtod( when.substr( timeRange + 2 ).c_str(), nullptr );
+			cue.ramp = true;
+		}
+		else
+		{
+			cue.from = cue.to = std::strtod( when.c_str(), nullptr );
+		}
+
+		const size_t equals = assignment.find( '=' );
+		if( equals == std::string::npos )
+		{
+			fprintf( stderr, "%s:%d: expected Name=value\n", path.c_str(), number );
+			fclose( file );
+			return false;
+		}
+
+		cue.name                = assignment.substr( 0, equals );
+		const std::string value = assignment.substr( equals + 1 );
+
+		const size_t valueRange = value.find( ".." );
+		if( cue.ramp && valueRange != std::string::npos )
+		{
+			cue.first  = std::strtof( value.substr( 0, valueRange ).c_str(), nullptr );
+			cue.second = std::strtof( value.substr( valueRange + 2 ).c_str(), nullptr );
+		}
+		else
+		{
+			cue.first = cue.second = std::strtof( value.c_str(), nullptr );
+			cue.ramp  = false;
+		}
+
+		cues.push_back( cue );
+	}
+
+	fclose( file );
+	return true;
+}
+
+/**
+    Render a cue-sheet driven frame sequence.
+
+    Adapted from orrery's, with one difference that matters for a feedback rig:
+    **the field count is not pinned.** Everywhere else in this harness the fields
+    are pinned so a picture is reproducible, and here they must not be — the
+    plugin has to run off the host clock exactly as it does in Resolume, so that
+    a frame at 30 fps really does contain the two trips round a 60 Hz loop that
+    the host would have given it. Pinning would make the footage a lie about the
+    thing it is footage of.
+
+    One instance for the whole sequence, so the frame store carries the rig's
+    history across the cut the way it does in a show. Switching rigs mid-piece
+    therefore dissolves rather than cutting: the loop re-converges from whatever
+    was already going round it, which is what the rig does and is worth seeing.
+*/
+int renderSequence( const std::string& directory, const std::string& cuePath,
+                    int width, int height, double seconds, double fps, bool effect )
+{
+	std::vector< Cue > cues;
+	if( !cuePath.empty() && !parseCues( cuePath, cues ) )
+		return 1;
+
+	EscapementPlugin plugin( effect );
+	if( !prepare( plugin, width, height ) )
+		return 1;
+
+	// Every cue is checked against the real parameter list before a single frame
+	// is rendered. A typo in a name would otherwise be a cue that silently never
+	// fires, and the only symptom would be a video subtly less interesting than
+	// the sheet says it is.
+	const std::map< std::string, unsigned int > byName = parameterIndex( plugin );
+	for( const Cue& cue : cues )
+	{
+		if( byName.find( cue.name ) == byName.end() )
+		{
+			fprintf( stderr, "cue names '%s', which is not a parameter\n", cue.name.c_str() );
+			return 1;
+		}
+	}
+
+	Target target = makeTarget( width, height );
+	const GLuint clip = effect ? makeTestClip( width, height ) : 0;
+
+	const int frames = static_cast< int >( seconds * fps + 0.5 );
+	int written      = 0;
+
+	for( int frame = 0; frame < frames; ++frame )
+	{
+		const double now = static_cast< double >( frame ) / fps;
+
+		// Cues are applied in file order every frame rather than tracked as
+		// state, so a later cue on the same parameter simply wins -- which is
+		// what reading the sheet top to bottom would lead you to expect.
+		for( const Cue& cue : cues )
+		{
+			if( now < cue.from )
+				continue;
+
+			float value = cue.second;
+			if( cue.ramp && now < cue.to && cue.to > cue.from )
+			{
+				const double t = ( now - cue.from ) / ( cue.to - cue.from );
+				// Smoothstep rather than linear: a parameter that starts and
+				// stops abruptly reads as a jump cut even when the value in
+				// between is right.
+				const double eased = t * t * ( 3.0 - 2.0 * t );
+				value = static_cast< float >( cue.first + ( cue.second - cue.first ) * eased );
+			}
+
+			plugin.SetFloatParameter( byName.at( cue.name ), value );
+		}
+
+		// Declare the unit -- the harness renders as fast as the GPU allows, so
+		// the plugin's own calibration has no real elapsed time to measure --
+		// and give it a steady 120 bpm so Sync has something to lock to.
+		plugin.SetClockScaleForTest( 1.0 );
+		plugin.SetTime( now );
+		plugin.SetBeatInfo( 120.0f, static_cast< float >( std::fmod( now / 2.0, 1.0 ) ) );
+
+		glBindFramebuffer( GL_FRAMEBUFFER, target.fbo );
+		glViewport( 0, 0, target.width, target.height );
+		glClearColor( 0.0f, 0.0f, 0.0f, 0.0f );
+		glClear( GL_COLOR_BUFFER_BIT );
+		plugin.Render( target.width, target.height, clip, 1.0f, 1.0f, target.fbo );
+		glFinish();
+
+		char path[ 1024 ];
+		snprintf( path, sizeof( path ), "%s/frame%05d.png", directory.c_str(), frame );
+
+		const std::vector< unsigned char > image = flipRows( readBytes( target ), width, height );
+		if( !writePng( path, width, height, image ) )
+		{
+			fprintf( stderr, "could not write %s\n", path );
+			releaseTarget( target );
+			return 1;
+		}
+
+		++written;
+		if( written % 60 == 0 )
+			printf( "  %d / %d frames\n", written, frames );
+	}
+
+	releaseTarget( target );
+	if( clip != 0 )
+		glDeleteTextures( 1, &clip );
+	plugin.DeInitGL();
+
+	printf( "wrote %d frames to %s at %g fps (%.1f seconds)\n", written, directory.c_str(), fps,
+	        written / fps );
+	return 0;
+}
+
 void usage()
 {
 	printf( "esctest -- the Escapement offline harness\n\n"
@@ -998,6 +1204,10 @@ void usage()
 	        "  --liveness        the rigs are still moving once settled\n"
 	        "  --reaction        chroma gain above unity is what keeps a rig alive\n"
 	        "  --scale           the same preset is the same rig at every raster\n"
+	        "  --sequence DIR    render a cue-sheet driven frame sequence\n"
+	        "  --script FILE     the cue sheet (with --sequence)\n"
+	        "  --seconds S       sequence length (default 55)\n"
+	        "  --fps F           sequence frame rate (default 30)\n"
 	        "  --motion          print how alive the current rig is, and exit\n"
 	        "  --all             every check above\n" );
 }
@@ -1008,6 +1218,10 @@ int main( int argc, char** argv )
 {
 	std::string outPath;
 	std::string contactPath;
+	std::string sequenceDir;
+	std::string scriptPath;
+	double seconds = 55.0;
+	double fps     = 30.0;
 	std::vector< std::string > settings;
 	int preset   = 0;
 	int fields   = 240;
@@ -1035,6 +1249,14 @@ int main( int argc, char** argv )
 			outPath = argv[ ++i ];
 		else if( arg == "--contact" && hasNext )
 			contactPath = argv[ ++i ];
+		else if( arg == "--sequence" && hasNext )
+			sequenceDir = argv[ ++i ];
+		else if( arg == "--script" && hasNext )
+			scriptPath = argv[ ++i ];
+		else if( arg == "--seconds" && hasNext )
+			seconds = std::stod( argv[ ++i ] );
+		else if( arg == "--fps" && hasNext )
+			fps = std::stod( argv[ ++i ] );
 		else if( arg == "--set" && hasNext )
 			settings.push_back( argv[ ++i ] );
 		else if( arg == "--preset" && hasNext )
@@ -1103,6 +1325,18 @@ int main( int argc, char** argv )
 	}
 
 	Target target = makeTarget( width, height );
+
+	//-----------------------------------------------------------------------
+	// The project video. Its own target and its own instance, so nothing the
+	// checks above did can reach it.
+	//-----------------------------------------------------------------------
+	if( !sequenceDir.empty() )
+	{
+		releaseTarget( target );
+		const int rc = renderSequence( sequenceDir, scriptPath, width, height, seconds, fps, effect );
+		CGLDestroyContext( context );
+		return rc;
+	}
 
 	//-----------------------------------------------------------------------
 	// How alive is THIS rig? Applies --preset and --set, settles, and prints the

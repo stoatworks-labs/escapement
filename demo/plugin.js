@@ -658,7 +658,18 @@ vec3 Palette( float v )
 	if( PaletteMode == 4 )
 	{
 		vec3 h = clamp( abs( mod( v * 6.0 + vec3( 0.0, 4.0, 2.0 ), 6.0 ) - 3.0 ) - 1.0, 0.0, 1.0 );
-		return h;
+
+		// Faded to black at the bottom, and without this the palette has no
+		// black point at all: hue at v = 0 is full-brightness RED, so every
+		// unlit pixel of a generator whose background is black comes out
+		// orange. The picture then reads as a wash with a fractal somewhere in
+		// it -- which is exactly what the Seeded Rig preset looked like, and it
+		// was the palette rather than the rig the whole time.
+		//
+		// smoothstep rather than a multiply by v: multiplying dims the
+		// mid-tones too and turns a hue sweep into a hue-and-brightness sweep.
+		// This only touches the bottom sixth.
+		return h * smoothstep( 0.0, 0.15, v );
 	}
 
 	return vec3( v );
@@ -1331,10 +1342,10 @@ const PRESETS = {
   'Dragon': { rig: 3, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.091, lens: 0.5, vignette: 0.12, gain: 0.68, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.55, driftRate: 0.435 },
   'Barnsley Fern': { rig: 4, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0, gain: 0.56, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.45, clip: 0.5, noise: 0.12, decay: 0, inject: 4, injectLevel: 0.2, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 1, driftRate: 0.52 },
   'Kaleidoscope': { rig: 5, taps: 0.6, symmetry: 0, foldMirror: 0, zoom: 0.329, rotate: 0.64, panX: 0.5, panY: 0.5, focus: 0.148, lens: 0.5, vignette: 0.3, gain: 0.625, pedestal: 0.5, gamma: 0.5, hueRotate: 0.68, saturation: 0.6, clip: 0.786, noise: 0.02, decay: 0.153, inject: 1, injectLevel: 0.78, injectSize: 0.42, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.45, driftRate: 0.523 },
-  'Seeded Rig': { rig: 6, taps: 0.3, seed: 0.402, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.091, lens: 0.5, vignette: 0.12, gain: 0.594, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 4, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.4, driftRate: 0.435 },
+  'Seeded Rig': { rig: 6, taps: 0.3, seed: 0.402, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.091, lens: 0.5, vignette: 0.2, gain: 0.594, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.3, injectSize: 1, palette: 4, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.4, driftRate: 0.435 },
   'Julia Drift': { rig: 7, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 1, noise: 0, decay: 0.55, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.571, escapeZoom: 0, precision: 0, drift: 0.6, driftRate: 0.523 },
-  'Mandelbrot Dive': { rig: 8, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.5, clip: 1, noise: 0, decay: 0.2, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.85, escapeZoom: 0.462, precision: 1, drift: 0.7, driftRate: 0.45 },
-  'Globe': { rig: 9, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0.2, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 1, tilt: 0.611, spin: 0.612, drift: 0.4, driftRate: 0.435 },
+  'Mandelbrot Dive': { rig: 8, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.5, clip: 1, noise: 0, decay: 0.2, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.85, escapeZoom: 0.462, precision: 1, drift: 1, driftRate: 0.52 },
+  'Globe': { rig: 9, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0.2, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 1, sphere: 1, tilt: 0.611, spin: 0.612, drift: 0.4, driftRate: 0.435 },
   'Cell Structures': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.3, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.148, lens: 0.5, vignette: 0.1, gain: 0.66, pedestal: 0.5, gamma: 0.5, hueRotate: 0.7, saturation: 0.7, clip: 0.5, noise: 0.25, decay: 0, inject: 0, injectLevel: 0, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.2, driftRate: 0.52 },
   'Galaxy': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.24, rotate: 0.76, panX: 0.5, panY: 0.5, focus: 0.112, lens: 0.46, vignette: 0.18, gain: 0.62, pedestal: 0.5, gamma: 0.5, hueRotate: 0.69, saturation: 0.62, clip: 0.786, noise: 0.03, decay: 0.1, inject: 1, injectLevel: 0.608, injectSize: 0.3, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
 };

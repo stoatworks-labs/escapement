@@ -1,0 +1,183 @@
+# The project video, as a cue sheet.
+#
+# Every frame is the real plugin rendering through the real FFGL sequence -- this
+# is the rig being *operated*, not a mock-up. Render with:
+#
+#   ./build/esctest --sequence /tmp/esc-frames --script tools/video.cues \
+#                   --size 1920x1080 --seconds 62 --fps 30
+#
+# Syntax: `T Name=V` sets at a time, `T1..T2 Name=V1..V2` ramps between two
+# (eased, because a parameter that starts and stops abruptly reads as a cut).
+#
+# Every value here is the 0..1 the host sees, not the physical quantity -- see
+# Controls.h for why there is no other kind. The physical value each one lands on
+# is in the comment where it matters.
+#
+# ## The argument of the piece
+#
+# The plugin's whole claim is that the fractals are what a feedback loop settles
+# into rather than anything it draws, so the video has to make that visible
+# rather than assert it. Hence the order:
+#
+#   1. a rig switched on, with the operator's hands OFF -- it builds, and then
+#      it STOPS, which is the theorem the plugin is built on;
+#   2. the hands arrive, and it never settles again;
+#   3. a gasket assembling itself out of sensor grain, which is the moment that
+#      proves nothing is drawing it;
+#   4. the same machine reconfigured -- snowflake, seeded, Julia, a deep zoom,
+#      a globe -- and last the reaction that keeps reorganising for ever.
+#
+# The rig is never reset between sections. The frame store carries its history
+# across every change, so each one DISSOLVES as the loop re-converges from what
+# was already going round it. That is what the rig does, and it is worth seeing.
+
+# ------------------------------------------------------- 0s: switch it on
+# A camera pointed at a screen, and a grid to give the lens an edge to find.
+# Zoom below 1:1 on purpose -- a tunnel is made of the frame's own edge, so the
+# camera has to be able to see past it.
+0.0   Rig=0
+0.0   Symmetry=0.0
+0.0   Mirror Wedge=0.0
+0.0   Zoom=0.208          # 0.98 per field
+0.0   Rotate=0.699        # 0.01 rad per field
+0.0   Pan X=0.5
+0.0   Pan Y=0.5
+0.0   Speed=0.5
+0.0   Focus=0.085         # 0.43% of the short edge
+0.0   Lens=0.5
+0.0   Vignette=0.08
+0.0   Gain=0.600          # 0.96
+0.0   Pedestal=0.5
+0.0   Gamma=0.5
+0.0   Hue Rotate=0.658    # 0.002 turns per field
+0.0   Saturation=0.55
+0.0   Clip=0.786
+0.0   Noise=0.0
+0.0   Decay=0.050
+0.0   Inject=3            # grid
+0.0   Inject Level=0.550
+0.0   Inject Size=0.720
+0.0   Inject X=0.5
+0.0   Inject Y=0.5
+0.0   Palette=0           # the signal's own colour
+0.0   Sphere=0.0
+0.0   Opacity=1.0
+
+# Hands OFF. The rig converges on its attractor and then stands still, which is
+# Banach rather than a bug -- and showing it is the only honest way to explain
+# what Drift is for.
+0.0   Drift=0.0
+0.0   Drift Rate=0.520
+
+# ------------------------------------------------------- 7s: the hands
+# The operator arrives. Nothing else changes; the picture stops being a still.
+7.0..11.0   Drift=0.0..0.55
+
+# A breath through 1:1, so the tunnel turns itself inside out and back.
+11.0..15.0  Zoom=0.208..0.760
+15.0..18.0  Zoom=0.760..0.240
+
+# ------------------------------------------- 18s: a gasket, out of grain
+# The moment the piece exists for. Three half-scale taps on a triangle, fed
+# nothing but sensor noise -- and the Sierpinski gasket assembles itself.
+# Nothing here draws a gasket.
+18.0  Rig=1
+18.0  Inject=4            # noise: the loop's only food
+18.0  Inject Level=0.500
+18.0  Inject Size=1.0
+18.0  Zoom=0.5            # exactly 1.0 -- the taps supply all the contraction
+18.0  Rotate=0.5          # exactly 0
+18.0  Gain=0.700          # 1.12, over unity so the attractor fills
+18.0  Decay=0.0
+18.0  Noise=0.10
+18.0  Focus=0.088
+18.0  Vignette=0.10
+18.0  Drift=0.35
+
+# ------------------------------------------------ 26s: the snowflake
+# Four third-scale taps make the Koch CURVE. The three-fold fold -- a mirror
+# wedge in front of the lens -- puts it on all three sides of a triangle.
+26.0  Rig=2
+26.0  Symmetry=0.18       # 3-fold
+26.0  Gain=0.812          # 1.30: a curve is measure zero and needs more than an area
+26.0  Decay=0.153
+26.0  Hue Rotate=0.600
+
+# ------------------------------------------------ 33s: a rig from a number
+# Seeded contractions. Nudging the seed walks through whole different rigs, and
+# every one is framed, because a seeded attractor's bounds are measured.
+33.0  Rig=6
+33.0  Symmetry=0.0
+33.0  Taps=0.30           # 4 taps
+33.0  Gain=0.594
+33.0  Inject Level=0.300  # quieter grain: at 0.5 it competes with the attractor
+33.0  Vignette=0.20
+33.0  Palette=4           # spectrum
+33.0  Drift=0.40
+33.0..39.0  Seed=0.402..0.740
+
+# ------------------------------------------------------ 39s: Julia
+# The iterator bank: analogue multipliers wired as a complex square. Drift walks
+# the constant, so it is a different Julia set every field and never settles.
+39.0  Rig=7
+39.0  Gain=0.0            # nothing goes round the geometric path
+39.0  Decay=0.55
+39.0  Inject=5            # the bank's own picture
+39.0  Inject Level=0.869
+39.0  Inject Size=1.0
+39.0  Palette=3           # ember
+39.0  Iterations=0.571
+39.0  Escape Zoom=0.0
+39.0  Drift=0.60
+39.0  Noise=0.0
+
+# --------------------------------------------- 44s: the deep zoom
+# The one place in the plugin that holds a coordinate, and so the only place
+# with a precision limit. Extended is double-float arithmetic; this is a real
+# 1e6 magnification, not a crop.
+44.0  Rig=8
+44.0  Palette=2           # ice
+44.0  Iterations=0.850    # ~1060: a starved count looks exactly like a precision failure
+44.0  Precision=1         # extended
+44.0  Decay=0.20
+44.0  Drift=0.30
+44.0..50.0  Escape Zoom=0.0..0.462   # 1 -> 1e6
+
+# ------------------------------------------------------ 50s: the globe
+# The rescan: the rig's screen is a sphere and the camera is looking at it. The
+# loop underneath is an ordinary mirror rig, still running, so the texture on
+# the ball is alive rather than a still being spun.
+50.0  Rig=9
+50.0  Zoom=0.208
+50.0  Rotate=0.699
+50.0  Gain=0.600
+50.0  Decay=0.050
+50.0  Inject=3
+50.0  Inject Level=0.550
+50.0  Inject Size=0.720
+50.0  Palette=1           # phosphor: a white grid hue-rotates to nothing, grey is a fixed point
+50.0  Sphere=1.0
+50.0  Tilt=0.611
+50.0  Spin=0.612
+50.0  Light=0.5
+50.0  Precision=0
+50.0  Escape Zoom=0.0
+50.0  Drift=0.40
+
+# --------------------------------------- 56s: the reaction, and out
+# Chroma gain above unity is a reaction term, the defocus is diffusion, the clip
+# is the ceiling. A reaction-diffusion system whose domains are colours, and it
+# keeps reorganising for as long as you leave it.
+56.0  Rig=0
+56.0  Sphere=0.0
+56.0  Zoom=0.300
+56.0  Focus=0.148
+56.0  Gain=0.660          # 1.056 -- the band is narrow
+56.0  Saturation=0.700    # 1.40 -- ABOVE unity, and this is the whole preset
+56.0  Clip=0.500
+56.0  Decay=0.0
+56.0  Noise=0.25
+56.0  Inject=0            # nothing: the loop finds its own picture
+56.0  Inject Level=0.0
+56.0  Hue Rotate=0.700
+56.0  Drift=0.20
