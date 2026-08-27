@@ -294,22 +294,35 @@ drift gate for CI and release, and it has been passing vacuously. Escapement's
 `ES01` source, `ES02` effect. Checked against every other ID in `~/Projects/
 resolume` before choosing.
 
+## Published (2026-08-27)
+
+- **v0.1.1**, signed and notarised: universal macOS bundle, Windows x64 DLL,
+  disk image and installer.
+- Video: `https://www.youtube.com/watch?v=fyqUDXdTyqs` (68s).
+- Reel: `https://www.instagram.com/reel/Dch_ROTip9x/`.
+- Demo live at `https://escapement-demo.stoatworks-labs.com`.
+- The video is a **render, not a screen recording** — Escapement has no window
+  of its own, so its footage comes from `esctest --sequence` driven by
+  `tools/video.cues`, which is in this repo next to the code. One plugin
+  instance for the whole piece, so the frame store carries its history across
+  every change on screen and each section dissolves into the next.
+- The Instagram cover is `docs/instagram-cover.jpg`, and Upload-Post takes a
+  cover only as a public URL at upload time — so it has to be committed and
+  SHA-pinned *before* the post. The Julia beat, because it is the only frame
+  that still reads as a fractal at tile size.
+
 ## Still open
 
 - **No OpenFX target.** The pattern is vendored and orrery's CMake shows how,
   but an OFX host renders arbitrary frames in arbitrary order, and a loop with
   history cannot answer that without being reimplemented as something else.
   Deliberately deferred rather than half-built.
-- **No CI, Windows build or plugin-bench expectation** yet. The web demo exists
-  and runs locally; it has never been deployed, and `wrangler.toml` is untested.
-- **`source/StoatworksAbout.h` is hand-written.** Escapement has no entry in the
-  website's `projects.json`, so `sync-about.py` cannot generate it. The four
-  About buttons point at pages that do not exist. Add the project and re-run the
-  sync before any release.
-- **Never opened in Resolume.** Both bundles are installed and pass the offline
-  harness, the shader gate and the sweep, but no field session has happened —
-  and the fleet's own experience is that first contact with the real host finds
-  what no test can.
-- **Two presets want another pass.** `Cell Structures` is stable but reads as
-  flat wedges rather than cells; `Mandelbrot Dive` is correct and harshly
-  coloured.
+- **Only one GPU.** Arena 7.27.1 loads and runs both plugins on macOS and on
+  Windows, and the Windows gate passes 15/15 — but that runs on Mesa llvmpipe,
+  so it says nothing about an NVIDIA or AMD driver. Nothing has yet run on a
+  discrete GPU other than one Apple Silicon Mac.
+- **`Cell Structures` has not been re-judged since the Focus fix.** It was
+  flagged as reading like flat wedges rather than cells; the cause of the
+  scale half of that was Focus being measured in texels, which is fixed and
+  guarded by `--scale`. Whether it now reads as cells at performance size is
+  an eyes-on question that has not been asked.

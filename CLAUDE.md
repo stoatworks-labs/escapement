@@ -25,8 +25,7 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
   `python3 demo/tools/check_shaders.py`
 - The kit under `demo/vendor/` is vendored from
   `stoatworks-backend/resolume-demo/kit/` — fix bugs THERE, not here.
-- NOT deployed. `wrangler.toml` is written and untested; the About/project URLs
-  it implies do not exist yet.
+- Deployed at `https://escapement-demo.stoatworks-labs.com`.
 
 ## Verify
 - Everything: `tools/verify.sh`
@@ -119,14 +118,12 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
   orrery, but Escapement's picture is a GPU feedback loop and an OFX host wants
   a CPU render of an arbitrary frame in arbitrary order — which a loop with
   history cannot answer without being reimplemented. Deliberately deferred.
-- **CI, Windows build, plugin-bench expectation.** The web demo exists and runs
-  locally; it has never been deployed.
-- **`StoatworksAbout.h` is a hand-written placeholder.** Escapement has no entry
-  in the website's `projects.json`, so `sync-about.py` cannot generate it and
-  the four About buttons point at pages that do not exist yet.
-- **Two presets want more work**: `Cell Structures` is stable but reads as flat
-  wedges rather than cells, and `Mandelbrot Dive` is correct but harshly
-  coloured.
+- **Only one GPU.** Arena 7.27.1 runs both plugins on macOS and Windows and the
+  Windows gate passes 15/15, but on Mesa llvmpipe — nothing has run on a
+  discrete NVIDIA or AMD card.
+- **`Cell Structures` wants an eyes-on judgement.** It was flagged as reading
+  like flat wedges; the scale half of that was the texel-measured Focus, now
+  fixed and guarded by `--scale`. Nobody has looked at it since.
 
 ## Diagnostics
 

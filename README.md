@@ -14,6 +14,8 @@ iterating amplifiers. There is no code anywhere that draws a Sierpinski gasket.
 There are three half-scale taps on the vertices of a triangle, and the gasket is
 where the loop goes.
 
+**Video:** [What it does, in 68 seconds](https://www.youtube.com/watch?v=fyqUDXdTyqs)
+
 Two plugins:
 
 | | |
