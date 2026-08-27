@@ -105,7 +105,7 @@ EscapementPlugin::EscapementPlugin( bool overInput ) :
 	params[ PT_PAN_Y ]    = 0.5f;
 	params[ PT_SYNC ]     = static_cast< float >( Sync::Free );
 	params[ PT_SPEED ]    = 0.5f;       // exactly 1.0
-	params[ PT_FOCUS ]    = 0.040f;     // 0.2 mip levels
+	params[ PT_FOCUS ]    = 0.085f;     // 0.43% of the short edge
 	params[ PT_LENS ]     = 0.5f;       // exactly zero
 	params[ PT_VIGNETTE ] = 0.08f;
 
@@ -821,7 +821,9 @@ void EscapementPlugin::RunField( const LoopParams& p, const LoopState& state, in
 	loopShader.Set( "Symmetry", p.symmetry );
 	loopShader.Set( "FoldMirror", p.foldMirror ? 1 : 0 );
 
-	loopShader.Set( "Focus", p.focus );
+	// Frame-relative to texels, here, because this is where the raster size is
+	// known. See FocusFromParam.
+	loopShader.Set( "Focus", FocusLod( p.focus, store.Width(), store.Height() ) );
 	loopShader.Set( "Lens", p.lens );
 	loopShader.Set( "Vignette", p.vignette );
 

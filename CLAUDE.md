@@ -37,6 +37,7 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - Every preset draws something with structure in it: `./build/esctest --presets`
 - Every preset is still MOVING once settled: `./build/esctest --liveness`
 - Chroma gain above unity is what keeps a rig alive: `./build/esctest --reaction`
+- The same preset is the same rig at every raster: `./build/esctest --scale`
 - How alive is one rig? `./build/esctest --motion --preset 11`
 - No dead controls: `python3 tools/sweep.py`
 
@@ -88,6 +89,12 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - Focus is a `textureLod` bias on the tap fetches — a low-pass filter *inside*
   the loop, which is what stops a hot rig collapsing into single-pixel noise.
   Not a blur to be moved to the end.
+- **Focus is a FRACTION OF THE FRAME, converted to a lod by `FocusLod` at the
+  raster size.** A lod is a number of texels, so a fixed one blurs a quarter as
+  much of the picture at 720p as at 180p — and since the blur is the diffusion
+  length, it sets the size of everything the loop grows. Cell Structures rendered
+  8 domains across the frame at 320x180 and 36 at 1280x720 from one preset.
+  `--scale` is the guard. Anything else measured in pixels has the same problem.
 - `sample`, `input`, `output`, `filter`, `common`, `active` are GLSL reserved
   words. Shader errors surface only at runtime, in the diagnostics log.
 - FFGL truncates every parameter name at 16 characters. `esctest --names`.

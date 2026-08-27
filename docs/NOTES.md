@@ -182,6 +182,35 @@ inherited three defaults I had not set (`rotate` among them) which the preset
 then zeroed — comparing a preset against a `--set` run means comparing every
 value, not the ones that were typed.
 
+## Focus was measured in texels (2026-08-27)
+
+Noticed while porting the demo and confirmed by rendering one preset at two
+rasters: Cell Structures gave **8 domain boundaries across the frame at 320x180
+and 36 at 1280x720**. `Focus` is a `textureLod` bias, a lod is a number of
+texels, and the blur is the diffusion length of a reaction-diffusion system --
+so the size of everything the loop grew was a function of the output resolution.
+Every preset here had been tuned on a small offline render, which means every one
+of them would have looked wrong on a real output.
+
+Fixed by making `Focus` a fraction of the short edge, with `FocusLod` converting
+it where the raster is known, and converting each preset's value so the tuned
+look is preserved. The ratio is now 1.30, and what remains is a floor rather than
+an error: a blur cannot be finer than one texel, so a small raster cannot be as
+sharp in frame terms as a large one. `--scale` holds it under 1.6.
+
+Two things fell out of the units change, both worth remembering. The `--reaction`
+test hard-coded `Focus=0.20` from when it was a lod, and when the units changed
+underneath it the half that is supposed to prove the rig DIES quietly got
+livelier than its own threshold -- a test that pins a magic number in a unit
+someone else owns will rot silently. And `Mandelbrot Dive` dropped below the
+liveness gate purely because its palette changed from Ember to Ice: the metric is
+luma-based, and a smoother palette reads as less motion for the same picture.
+
+`Mandelbrot Dive` also moved to the Ice palette. Ember is three clamped ramps,
+which suits the broad bands of a 1:1 view and posterises a 1e6 zoom -- where
+almost every pixel is near the boundary -- into flat orange and black. Julia
+keeps Ember, where the bands really are broad.
+
 ## sync.sh cannot see any repo (found 2026-08-27, NOT fixed)
 
 `stoatworks-backend/resolume-demo/sync.sh` computes

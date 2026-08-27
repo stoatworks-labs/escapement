@@ -113,7 +113,7 @@ inline constexpr Preset kPresets[] = {
 	            // versions of this preset did.
 	    0.699f, // rotate 0.01 rad per field -- what turns nested frames into a spiral
 	    0.5f, 0.5f,
-	    0.040f, // focus 0.2 -- nearly sharp, so the nested edges stay edges
+	    0.085f, // focus 0.2 -- nearly sharp, so the nested edges stay edges
 	    0.5f,
 	    0.08f,  // vignette. Gentle: it is inside the loop, so it compounds.
 	    0.600f, // gain 0.96
@@ -141,7 +141,7 @@ inline constexpr Preset kPresets[] = {
 	    -1.0f, -1.0f, 0.0f, 0.0f,
 	    0.5f,   // zoom exactly 1.0 -- the taps supply all the contraction
 	    0.5f, 0.5f, 0.5f,
-	    0.05f,  // focus 0.25 -- nearly sharp: the gasket wants its edges
+	    0.088f,  // focus 0.25 -- nearly sharp: the gasket wants its edges
 	    0.5f,
 	    0.10f,
 	    0.700f, // gain 1.12 -- over unity, so the attractor fills rather than fades
@@ -167,7 +167,7 @@ inline constexpr Preset kPresets[] = {
 	    0.18f,  // symmetry 3 -- this is what makes it a snowflake
 	    0.0f,   // rotational fold, NOT mirrored
 	    0.5f, 0.5f, 0.5f, 0.5f,
-	    0.04f,  // focus 0.2
+	    0.085f,  // focus 0.2
 	    0.5f, 0.08f,
 	    0.812f, // gain 1.30 -- a curve is measure zero and needs more than an area does
 	    0.5f, 0.5f,
@@ -184,7 +184,7 @@ inline constexpr Preset kPresets[] = {
 	    0.5f,
 	    0.699f, // a slow rotation, because the dragon is worth turning
 	    0.5f, 0.5f,
-	    0.06f, 0.5f, 0.12f,
+	    0.091f, 0.5f, 0.12f,
 	    0.680f, // gain 1.09
 	    0.5f, 0.5f, 0.640f, 0.5f, 0.857f,
 	    0.10f, 0.0f,
@@ -201,7 +201,7 @@ inline constexpr Preset kPresets[] = {
 	  { 4.0f,
 	    -1.0f, -1.0f, 0.0f, 0.0f,
 	    0.5f, 0.5f, 0.5f, 0.5f,
-	    0.04f, 0.5f, 0.0f,
+	    0.085f, 0.5f, 0.0f,
 	    0.560f, // gain 0.90. Barnsley is the awkward one: its big map carries most
 	           // of the frond on its own and wants ~1, while the three maps overlap
 	           // heavily where they meet and blow out well before that.
@@ -227,7 +227,7 @@ inline constexpr Preset kPresets[] = {
 	    0.329f, // zoom 0.996 -- the only contraction in the rig
 	    0.640f, // a slow turn
 	    0.5f, 0.5f,
-	    0.20f, 0.5f, 0.30f,
+	    0.148f, 0.5f, 0.30f,
 	    0.625f, // gain 1.00
 	    0.5f, 0.5f,
 	    0.680f, // hue 0.0026 per field
@@ -248,7 +248,7 @@ inline constexpr Preset kPresets[] = {
 	    0.402f, // seed 4021
 	    0.0f, 0.0f,
 	    0.5f, 0.5f, 0.5f, 0.5f,
-	    0.06f, 0.5f, 0.12f,
+	    0.091f, 0.5f, 0.12f,
 	    0.594f, 0.5f, 0.5f, 0.620f, 0.5f, 0.857f,
 	    0.10f, 0.0f,
 	    4.0f, 0.500f, 1.0f,
@@ -290,12 +290,16 @@ inline constexpr Preset kPresets[] = {
 	    0.560f, 0.5f, 1.0f, 0.0f,
 	    0.20f,
 	    5.0f, 0.869f, 1.0f,
-	    3.0f,   // Ember
+	    2.0f,   // Ice. Ember posterises a deep zoom into flat orange and black:
+	            // its curve is three clamped ramps, which is right for the broad
+	            // bands of a 1:1 view and far too contrasty for the filigree at
+	            // 1e6, where almost every pixel is near the boundary. Julia keeps
+	            // Ember, where the bands ARE broad.
 	    0.0f, 0.5f, 0.5f,
 	    0.850f, // 1060 iterations -- a deep zoom needs them, and starving it
 	            // looks exactly like a precision failure: flat, blocky, wrong
 	    0.462f, // 1e6 magnification
-	    1.0f , 0.70f, 0.450f } },// Extended
+	    1.0f , 1.00f, 0.520f  } },// Extended
 
 	//-------------------------------------------------------------------
 	// The rescan: the rig's screen is a sphere and the camera is looking at
@@ -313,7 +317,7 @@ inline constexpr Preset kPresets[] = {
 	            // WRAP, and a loop that has filled has no texture left in it.
 	    0.699f, // rotate 0.01 rad per field
 	    0.5f, 0.5f,
-	    0.040f, // focus 0.2 -- sharp enough to keep the nested edges
+	    0.085f, // focus 0.2 -- sharp enough to keep the nested edges
 	    0.5f,
 	    0.20f,  // vignette
 	    0.600f, // gain 0.96
@@ -349,7 +353,7 @@ inline constexpr Preset kPresets[] = {
 	            // the whole thing collapses to a dot within a few hundred fields.
 	            // Found by setting it to zero and watching that happen.
 	    0.5f, 0.5f,
-	    0.200f, // focus 1.0 -- the diffusion term. Soft enough to couple
+	    0.148f, // focus 1.0 -- the diffusion term. Soft enough to couple
 	            // neighbouring pixels, sharp enough that the gain can rebuild
 	            // what it blurs away
 	    0.5f,
@@ -390,7 +394,7 @@ inline constexpr Preset kPresets[] = {
 	    0.240f, // zoom 0.9885 -- pulled back, so the nested frames recede
 	    0.760f, // rotate 0.026 rad per field
 	    0.5f, 0.5f,
-	    0.12f, 0.46f, 0.18f,
+	    0.112f, 0.46f, 0.18f,
 	    0.620f, // gain 0.99
 	    0.5f, 0.5f,
 	    0.690f, 0.62f, 0.786f,

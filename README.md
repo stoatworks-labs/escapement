@@ -95,7 +95,8 @@ Two thousandths of a turn per field is plenty.
 
 **Focus** is a lens that is slightly soft, and it is inside the loop. Sharp and
 hot breaks up into single-pixel noise; soft and hot is the thing everyone
-recognises as video feedback.
+recognises as video feedback. It is measured as a fraction of the frame, so a
+preset looks the same on your preview and on a 4K output.
 
 **Zoom below 1 gives you the tunnel.** A feedback tunnel is made of the screen's
 own edge, re-photographed — so the camera has to be able to see past the frame,

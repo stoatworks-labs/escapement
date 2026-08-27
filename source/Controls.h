@@ -267,14 +267,32 @@ float DriftFromParam( float value );
 /// is visibly wobbling to an LFO.
 float DriftRateFromParam( float value );
 
-/// Defocus, as a mip level. 0..5.
+/// Defocus, as a fraction of the SHORT EDGE. 0..0.05.
 ///
 /// A real rig's focus is the single most powerful control on it, because a lens
 /// that is slightly soft is a low-pass filter INSIDE the loop -- and a low-pass
 /// filter inside a feedback loop is what stops the picture breaking up into
 /// single-pixel noise as the gain comes up. Sharp and hot is static; soft and
 /// hot is the thing everyone recognises as video feedback.
+///
+/// **A fraction of the frame, not a mip level, and that is not a refinement.**
+/// It reaches the shader as a `textureLod` bias, and a lod is a number of
+/// TEXELS: the same lod blurs half as much of the picture at 4K as it does at
+/// 1080. That makes the blur -- which for a reaction-diffusion rig is the
+/// diffusion length, and therefore sets the size of everything the loop grows --
+/// a function of the output resolution. Cell Structures rendered a coarse
+/// labyrinth at 480x270 and a fine spiral of filaments at 1280x720, from the
+/// same preset. An operator's preview and their projector would be different
+/// instruments.
+///
+/// `Escapement::RunField` converts this to the lod the current raster needs.
 float FocusFromParam( float value );
+
+/// The lod that gives a blur of `fraction` of the short edge at this size.
+///
+/// Zero stays exactly zero: a lens cannot be sharper than one texel, and the
+/// control has to be able to reach "sharp" at every resolution.
+float FocusLod( float fraction, int width, int height );
 
 /// Lens distortion. -1..1, zero centred: negative is barrel, positive pincushion.
 float LensFromParam( float value );

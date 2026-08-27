@@ -796,7 +796,11 @@ void testReaction( const Target& target )
         applySetting( plugin, "Clip=0.5" );
         applySetting( plugin, "Decay=0.0" );
         applySetting( plugin, "Zoom=0.30" );
-        applySetting( plugin, "Focus=0.20" );     // the diffusion term
+        // 0.148 is Cell Structures' own value, and it is a FRACTION OF THE FRAME
+        // rather than a lod -- see FocusFromParam. This test hard-coded 0.20 back
+        // when it was a lod, and when the units changed underneath it the
+        // "should be dead" half quietly got livelier than its own threshold.
+        applySetting( plugin, "Focus=0.148" );    // the diffusion term
         applySetting( plugin, "Vignette=0.10" );
         applySetting( plugin, "Inject=0" );       // nothing but the loop's own grain
         applySetting( plugin, "Noise=0.25" );
@@ -836,6 +840,98 @@ void testReaction( const Target& target )
 
     snprintf( label, sizeof( label ), "the chroma gain is what did it (%.1fx)", flat > 1e-6 ? alive / flat : 999.0 );
     check( alive > flat * 4.0, label );
+}
+
+/// How many domain boundaries cross the frame, per frame width.
+///
+/// A scale-free measure of how big the things the loop grows are: it counts
+/// where the picture changes which colour domain it is in, along a set of rows,
+/// and divides by nothing at all -- the count IS per frame, because a row is a
+/// frame width whatever the raster.
+double domainsAcross( const std::vector< unsigned char >& rgba, int width, int height )
+{
+	double total = 0.0;
+	int lines    = 0;
+
+	for( int y = height / 4; y < 3 * height / 4; y += std::max( 1, height / 40 ) )
+	{
+		int sign = 0;
+		int n    = 0;
+
+		for( int x = 0; x < width; ++x )
+		{
+			const size_t i = ( size_t( y ) * width + x ) * 4;
+			const int d    = int( rgba[ i ] ) - int( rgba[ i + 1 ] );
+			const int s    = d > 40 ? 1 : ( d < -40 ? -1 : 0 );
+
+			if( s != 0 && s != sign )
+			{
+				if( sign != 0 )
+					++n;
+				sign = s;
+			}
+		}
+
+		total += n;
+		++lines;
+	}
+
+	return lines > 0 ? total / double( lines ) : 0.0;
+}
+
+/**
+    The same preset must be the same instrument at every raster.
+
+    `Focus` reaches the shader as a `textureLod` bias, and a lod is a number of
+    TEXELS -- so before this was fixed, the same lod blurred a quarter as much of
+    the picture at 1280x720 as at 320x180. For a reaction-diffusion rig the blur
+    IS the diffusion length, and the diffusion length sets the size of everything
+    the loop grows: Cell Structures rendered 8 domains across the frame at
+    320x180 and 36 at 1280x720, from one preset. An operator's preview and their
+    projector were different instruments.
+
+    Focus is now a fraction of the short edge and `FocusLod` converts it for the
+    current raster. What is left is a floor rather than a scaling error: a blur
+    cannot be finer than one texel, so a small raster cannot be as sharp, in
+    frame terms, as a large one. 1.6 is that floor with room, and it is a long
+    way from the 4.6 this used to be.
+*/
+void testScale( const Target& unused )
+{
+	( void )unused;
+	printf( "\n== scale (the same preset at two rasters)\n" );
+
+	const int sizes[ 2 ][ 2 ] = { { 320, 180 }, { 1280, 720 } };
+	double domains[ 2 ]       = { 0.0, 0.0 };
+
+	for( int i = 0; i < 2; ++i )
+	{
+		Target target = makeTarget( sizes[ i ][ 0 ], sizes[ i ][ 1 ] );
+
+		EscapementPlugin plugin( false );
+		if( !prepare( plugin, target.width, target.height ) )
+			return;
+
+		const std::map< std::string, unsigned int > byName = parameterIndex( plugin );
+		const auto preset                                  = byName.find( "Preset" );
+		if( preset != byName.end() )
+			plugin.SetFloatParameter( preset->second, 11.0f );// Cell Structures
+
+		run( plugin, target, 500, 8 );
+		domains[ i ] = domainsAcross( readBytes( target ), target.width, target.height );
+
+		plugin.DeInitGL();
+		releaseTarget( target );
+	}
+
+	const double ratio = domains[ 0 ] > 0.5 && domains[ 1 ] > 0.5
+	                         ? std::max( domains[ 0 ], domains[ 1 ] ) / std::min( domains[ 0 ], domains[ 1 ] )
+	                         : 99.0;
+
+	char label[ 200 ];
+	snprintf( label, sizeof( label ), "%.1f domains at 320x180, %.1f at 1280x720 (%.2fx)",
+	          domains[ 0 ], domains[ 1 ], ratio );
+	check( ratio < 1.6, label );
 }
 
 void testLiveness( const Target& target, int settle, int window, int stride )
@@ -901,6 +997,7 @@ void usage()
 	        "  --guard           a hostile rig leaves no NaN\n"
 	        "  --liveness        the rigs are still moving once settled\n"
 	        "  --reaction        chroma gain above unity is what keeps a rig alive\n"
+	        "  --scale           the same preset is the same rig at every raster\n"
 	        "  --motion          print how alive the current rig is, and exit\n"
 	        "  --all             every check above\n" );
 }
@@ -927,6 +1024,7 @@ int main( int argc, char** argv )
 	bool doLive  = false;
 	bool doCav   = false;
 	bool doMotion = false;
+	bool doScale  = false;
 
 	for( int i = 1; i < argc; ++i )
 	{
@@ -973,10 +1071,12 @@ int main( int argc, char** argv )
 			doLive = true;
 		else if( arg == "--reaction" )
 			doCav = true;
+		else if( arg == "--scale" )
+			doScale = true;
 		else if( arg == "--motion" )
 			doMotion = true;
 		else if( arg == "--all" )
-			doNames = doTaps = doRate = doStab = doGuard = doPre = doLive = doCav = true;
+			doNames = doTaps = doRate = doStab = doGuard = doPre = doLive = doCav = doScale = true;
 		else
 		{
 			usage();
@@ -1151,6 +1251,8 @@ int main( int argc, char** argv )
 		testLiveness( target, 400, 8, 60 );
 	if( doCav )
 		testReaction( target );
+	if( doScale )
+		testScale( target );
 
 	releaseTarget( target );
 	CGLDestroyContext( context );

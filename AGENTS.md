@@ -155,6 +155,30 @@ It was removed rather than shipped as a control costing a full float frame per
 field of delay — 350 MB at 4K — to change nothing. If anyone brings it back, the
 missing ingredient is a non-monotonic proc amp, not more delay.
 
+### A lod is texels, and texels are not a fraction of the picture
+
+`Focus` is the plugin's diffusion length -- it is a low-pass filter inside the
+loop, and for the reaction-diffusion rigs it sets the size of everything the loop
+grows. It reaches the shader as a `textureLod` bias.
+
+A lod of 1 is two TEXELS. Two texels is 1.1% of a 180-pixel short edge and 0.28%
+of a 720-pixel one, so a fixed lod is a blur that shrinks, in frame terms, as the
+output gets bigger. Cell Structures rendered a coarse labyrinth of 8 domains
+across the frame at 320x180 and a fine spiral of 36 at 1280x720, **from the same
+preset**: an operator's preview and their projector were different instruments,
+and every preset in this repo had been tuned on a small offline render.
+
+`FocusFromParam` is now a fraction of the short edge and `FocusLod` converts it
+where the raster size is known. What is left is a floor, not a scaling error: a
+blur cannot be finer than one texel, so a small raster cannot be as sharp in
+frame terms as a large one. The ratio went from 4.6 to 1.3, and `--scale` holds
+it under 1.6.
+
+The general rule this is an instance of: **anything measured in pixels is a bug
+in a plugin whose output size is somebody else's decision.** The taps are in
+frame coordinates and were always fine. The grain is per-pixel and is not, but
+its role is forcing rather than scale-setting, so it does not show.
+
 ### The taps sum. Averaging them deletes the attractor
 
 `acc / tapCount` is the normalisation everyone reaches for and it is fatal. A

@@ -155,7 +155,20 @@ float DriftRateFromParam( float value )
 
 float FocusFromParam( float value )
 {
-	return Clamp01( value ) * 5.0f;
+	return Clamp01( value ) * 0.05f;
+}
+
+float FocusLod( float fraction, int width, int height )
+{
+	const int shortEdge = ( width < height ? width : height );
+	if( shortEdge <= 0 || fraction <= 0.0f )
+		return 0.0f;
+
+	// A lod of n is a blur of about 2^n texels, so the lod that blurs a given
+	// number of texels is its log. Clamped at one texel: below that there is
+	// nothing to ask for, and log2 of a fraction is negative.
+	const float texels = fraction * float( shortEdge );
+	return texels <= 1.0f ? 0.0f : std::log2( texels );
 }
 
 float LensFromParam( float value )

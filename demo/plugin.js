@@ -831,7 +831,25 @@ const panFromParam = (v) => signedFromParam(v, 0.05, 2.5);
 const speedFromParam = (v) => (v < 0.02 ? 0 : Math.pow(4, clamp01(v) * 2 - 1));
 const driftFromParam = (v) => clamp01(v);
 const driftRateFromParam = (v) => exponential(v, 0.005, 1);
-const focusFromParam = (v) => clamp01(v) * 5;
+/**
+ * Defocus, as a fraction of the SHORT EDGE — not a mip level.
+ *
+ * It reaches the shader as a textureLod bias, and a lod is a number of TEXELS,
+ * so the same lod blurs a quarter as much of the picture at 1280x720 as at
+ * 320x180. For a reaction-diffusion rig the blur IS the diffusion length and
+ * therefore sets the size of everything the loop grows: Cell Structures rendered
+ * 8 domains across the frame at 320x180 and 36 at 1280x720 from one preset.
+ */
+const focusFromParam = (v) => clamp01(v) * 0.05;
+
+/// The lod that blurs `fraction` of the short edge at this raster. Zero stays
+/// exactly zero: a lens cannot be sharper than one texel.
+function focusLod(fraction, width, height) {
+  const shortEdge = Math.min(width, height);
+  if (shortEdge <= 0 || fraction <= 0) return 0;
+  const texels = fraction * shortEdge;
+  return texels <= 1 ? 0 : Math.log2(texels);
+}
 const lensFromParam = (v) => signedFromParam(v, 1, 1.6);
 const gainFromParam = (v) => clamp01(v) * 1.6;
 const pedestalFromParam = (v) => signedFromParam(v, 0.1, 2);
@@ -1307,18 +1325,18 @@ const MAX_FIELDS_PER_FRAME = 8;
 //===========================================================================
 
 const PRESETS = {
-  'Mirror Tunnel': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.08, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
-  'Sierpinski': { rig: 1, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.05, lens: 0.5, vignette: 0.1, gain: 0.7, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.35, driftRate: 0.435 },
-  'Koch Snowflake': { rig: 2, symmetry: 0.18, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.08, gain: 0.812, pedestal: 0.5, gamma: 0.5, hueRotate: 0.6, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0.153, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.35, driftRate: 0.435 },
-  'Dragon': { rig: 3, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.06, lens: 0.5, vignette: 0.12, gain: 0.68, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.55, driftRate: 0.435 },
-  'Barnsley Fern': { rig: 4, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0, gain: 0.56, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.45, clip: 0.5, noise: 0.12, decay: 0, inject: 4, injectLevel: 0.2, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 1, driftRate: 0.52 },
-  'Kaleidoscope': { rig: 5, taps: 0.6, symmetry: 0, foldMirror: 0, zoom: 0.329, rotate: 0.64, panX: 0.5, panY: 0.5, focus: 0.2, lens: 0.5, vignette: 0.3, gain: 0.625, pedestal: 0.5, gamma: 0.5, hueRotate: 0.68, saturation: 0.6, clip: 0.786, noise: 0.02, decay: 0.153, inject: 1, injectLevel: 0.78, injectSize: 0.42, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.45, driftRate: 0.523 },
-  'Seeded Rig': { rig: 6, taps: 0.3, seed: 0.402, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.06, lens: 0.5, vignette: 0.12, gain: 0.594, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 4, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.4, driftRate: 0.435 },
+  'Mirror Tunnel': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0.08, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
+  'Sierpinski': { rig: 1, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.088, lens: 0.5, vignette: 0.1, gain: 0.7, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.35, driftRate: 0.435 },
+  'Koch Snowflake': { rig: 2, symmetry: 0.18, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0.08, gain: 0.812, pedestal: 0.5, gamma: 0.5, hueRotate: 0.6, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0.153, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.35, driftRate: 0.435 },
+  'Dragon': { rig: 3, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.091, lens: 0.5, vignette: 0.12, gain: 0.68, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.55, driftRate: 0.435 },
+  'Barnsley Fern': { rig: 4, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0, gain: 0.56, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.45, clip: 0.5, noise: 0.12, decay: 0, inject: 4, injectLevel: 0.2, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 1, driftRate: 0.52 },
+  'Kaleidoscope': { rig: 5, taps: 0.6, symmetry: 0, foldMirror: 0, zoom: 0.329, rotate: 0.64, panX: 0.5, panY: 0.5, focus: 0.148, lens: 0.5, vignette: 0.3, gain: 0.625, pedestal: 0.5, gamma: 0.5, hueRotate: 0.68, saturation: 0.6, clip: 0.786, noise: 0.02, decay: 0.153, inject: 1, injectLevel: 0.78, injectSize: 0.42, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.45, driftRate: 0.523 },
+  'Seeded Rig': { rig: 6, taps: 0.3, seed: 0.402, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.091, lens: 0.5, vignette: 0.12, gain: 0.594, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 4, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.4, driftRate: 0.435 },
   'Julia Drift': { rig: 7, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 1, noise: 0, decay: 0.55, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.571, escapeZoom: 0, precision: 0, drift: 0.6, driftRate: 0.523 },
-  'Mandelbrot Dive': { rig: 8, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.5, clip: 1, noise: 0, decay: 0.2, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.85, escapeZoom: 0.462, precision: 1, drift: 0.7, driftRate: 0.45 },
-  'Globe': { rig: 9, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.2, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 1, tilt: 0.611, spin: 0.612, drift: 0.4, driftRate: 0.435 },
-  'Cell Structures': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.3, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.2, lens: 0.5, vignette: 0.1, gain: 0.66, pedestal: 0.5, gamma: 0.5, hueRotate: 0.7, saturation: 0.7, clip: 0.5, noise: 0.25, decay: 0, inject: 0, injectLevel: 0, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.2, driftRate: 0.52 },
-  'Galaxy': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.24, rotate: 0.76, panX: 0.5, panY: 0.5, focus: 0.12, lens: 0.46, vignette: 0.18, gain: 0.62, pedestal: 0.5, gamma: 0.5, hueRotate: 0.69, saturation: 0.62, clip: 0.786, noise: 0.03, decay: 0.1, inject: 1, injectLevel: 0.608, injectSize: 0.3, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
+  'Mandelbrot Dive': { rig: 8, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.5, clip: 1, noise: 0, decay: 0.2, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.85, escapeZoom: 0.462, precision: 1, drift: 0.7, driftRate: 0.45 },
+  'Globe': { rig: 9, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.085, lens: 0.5, vignette: 0.2, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 1, tilt: 0.611, spin: 0.612, drift: 0.4, driftRate: 0.435 },
+  'Cell Structures': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.3, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.148, lens: 0.5, vignette: 0.1, gain: 0.66, pedestal: 0.5, gamma: 0.5, hueRotate: 0.7, saturation: 0.7, clip: 0.5, noise: 0.25, decay: 0, inject: 0, injectLevel: 0, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.2, driftRate: 0.52 },
+  'Galaxy': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.24, rotate: 0.76, panX: 0.5, panY: 0.5, focus: 0.112, lens: 0.46, vignette: 0.18, gain: 0.62, pedestal: 0.5, gamma: 0.5, hueRotate: 0.69, saturation: 0.62, clip: 0.786, noise: 0.03, decay: 0.1, inject: 1, injectLevel: 0.608, injectSize: 0.3, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
 };
 
 //===========================================================================
@@ -1581,7 +1599,8 @@ class EscapementRenderer {
     program.setInt('Symmetry', p.symmetry);
     program.setInt('FoldMirror', p.foldMirror ? 1 : 0);
 
-    program.set('Focus', p.focus);
+    // Frame-relative to texels, here, where the raster size is known.
+    program.set('Focus', focusLod(p.focus, back.width, back.height));
     program.set('Lens', p.lens);
     program.set('Vignette', p.vignette);
 
@@ -1829,9 +1848,9 @@ mountDemo({
       hint: 'Multiplies the camera\'s moves and nothing else — the operator walking faster, not the rig running at a different field rate. On Zoom it scales the distance from 1, so twice the speed of 1.02 is 1.04.',
     },
     {
-      id: 'focus', name: 'Focus', type: 'standard', default: 0.04, group: 'Camera',
-      display: (v) => `${focusFromParam(v).toFixed(2)} lod`,
-      hint: 'A lens that is slightly soft, and it is INSIDE the loop — a low-pass filter inside a feedback loop is what stops a hot rig collapsing into single-pixel noise. Sharp and hot is static; soft and hot is what everyone recognises as video feedback.',
+      id: 'focus', name: 'Focus', type: 'standard', default: 0.085, group: 'Camera',
+      display: (v) => `${(focusFromParam(v) * 100).toFixed(2)}% of frame`,
+      hint: 'A fraction of the FRAME, not a number of texels, so the same preset is the same instrument at 720p and at 4K. A lens that is slightly soft, and it is INSIDE the loop — a low-pass filter inside a feedback loop is what stops a hot rig collapsing into single-pixel noise. Sharp and hot is static; soft and hot is what everyone recognises as video feedback.',
     },
     {
       id: 'lens', name: 'Lens', type: 'standard', default: 0.5, group: 'Camera',
