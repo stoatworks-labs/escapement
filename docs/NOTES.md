@@ -259,9 +259,16 @@ It was not this plugin:
   2502 MB to 1460 MB.
 - The full gate then ran clean end to end.
 
-Settled by the control experiment rather than by argument: with **every plugin
-removed from the box**, Arena restarted on its own after two minutes. It is the
-box, and nothing to do with this plugin or any other.
+It is not this plugin. **Nor is it the box — that was my second wrong answer.**
+win-lab is shared, and `winlab.sh deploy`/`clean` call `kill-arena.ps1`, which is
+`Process.Kill()` and a relaunch, so another session's deploy hard-kills the Arena
+you are gating against. Given away by a launch that loaded ten plugins when this
+session had deployed two.
+
+The "control experiment" that seemed to settle it — every plugin removed, idle
+Arena, restarted anyway — removed only MY plugins and never controlled for another
+session. Recorded in fleet-notes with the log signature that distinguishes a kill
+from a crash and from a hung quit.
 
 Arena's launch history that night reads 01:56, 02:13, 02:40 -- and the 02:40
 restart happened **during the gate run that reported "Arena survived the run"**.
