@@ -102,6 +102,14 @@ own edge, re-photographed — so the camera has to be able to see past the frame
 which means pulling back, not pushing in. Above 1:1 you get expanding blooms
 instead, which is a different and also good thing.
 
+**Drift is what keeps it alive, and it is on by default.** A feedback loop with
+every knob held still is a contraction mapping: it converges on its attractor and
+then stops, for ever, and zooming does not help because a self-similar attractor
+magnified is the same attractor. Real rigs never go still because a person is
+always moving the cameras. Drift is that person — slow, wandering, and running at
+mutually irrational rates so it never repeats. Turn it to zero and the rig will
+settle within seconds, which is worth doing once just to see it happen.
+
 **Field Rate** is the rig's own clock, not Resolume's. The picture evolves at
 the same speed whether the host is managing 60 fps or dropping to 24.
 

@@ -143,6 +143,16 @@ float SpeedFromParam( float value )
 	return std::pow( 4.0f, Clamp01( value ) * 2.0f - 1.0f );
 }
 
+float DriftFromParam( float value )
+{
+	return Clamp01( value );
+}
+
+float DriftRateFromParam( float value )
+{
+	return Exponential( value, 0.005f, 1.0f );
+}
+
 float FocusFromParam( float value )
 {
 	return Clamp01( value ) * 5.0f;

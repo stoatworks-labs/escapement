@@ -34,11 +34,73 @@ float LoopGain( const TapSet& tapsBeforeCamera, float zoom, float gain, float de
 	return gain * weightSum + decay;
 }
 
-LoopState Resolve( const LoopParams& params )
+void ApplyDrift( LoopParams& p, double phase, float contractivity )
+{
+	if( p.drift <= 0.0f )
+		return;
+
+	const double tau = 6.283185307179586;
+	const float d    = p.drift;
+
+	// How far the attractor moves for a given nudge. Clamped below 1 so a rig
+	// sitting exactly at unity gain does not divide the hands by zero, and above
+	// 0.02 so a runaway rig still gets some.
+	const float loop     = contractivity * std::fabs( p.zoom );
+	const float compliance = 1.0f - ( loop > 0.98f ? 0.98f : loop );
+
+	// Depths are fractions of each control's USEFUL range, not of its slider.
+	// Zoom's slider reaches 1.10 and nothing above about 1.03 is watchable, so
+	// 0.010 is a large modulation of the part that matters and would be an
+	// invisible one of the part that does not.
+	//
+	// They are quoted for a COMPLIANCE OF 1 and scaled down by how stiff the rig
+	// actually is -- see the note in Loop.h. A mirror rig at 0.98 gets a fiftieth
+	// of these; Sierpinski gets half.
+	p.zoom += d * compliance * 0.100f * float( std::sin( tau * phase ) );
+	p.rotate += d * compliance * 0.800f * float( std::sin( tau * phase * 0.732 ) );
+	p.panX += d * compliance * 0.300f * float( std::sin( tau * phase * 0.517 ) );
+	p.panY += d * compliance * 0.300f * float( std::sin( tau * phase * 0.313 + tau * 0.25 ) );
+
+	// The colour walk gets a hand on it too, so that a rig which has settled
+	// into greys -- where a hue rotation about the luma axis is a no-op, because
+	// grey is a fixed point of it -- still has something changing.
+	//
+	// Small, and deliberately smaller than it was: hue rotation ACCUMULATES
+	// round the loop, so a drift that looks modest per field walks a saturated
+	// rig all the way round the wheel and parks it on whatever colour it is
+	// passing. The Globe preset went flat magenta at 0.004.
+	p.hueRotate += d * 0.0015f * float( std::sin( tau * phase * 0.211 ) );
+
+	// Moving what is in front of the lens is the most effective of all of these
+	// on a rig that is injecting anything, because the injection is the only
+	// term in the loop that is not already converged.
+	p.injectX += d * 0.45f * float( std::sin( tau * phase * 0.421 ) );
+	p.injectY += d * 0.45f * float( std::sin( tau * phase * 0.277 + tau * 0.25 ) );
+
+	// The escape rigs have no camera -- their gain is zero and the taps are
+	// never sampled -- so drifting the camera would leave them exactly as dead
+	// as before. What moves there is the constant itself: a Julia set whose c
+	// wanders never settles, because it is a different Julia set every field.
+	p.juliaX += d * 0.12f * float( std::sin( tau * phase * 0.611 ) );
+	p.juliaY += d * 0.12f * float( std::sin( tau * phase * 0.389 + tau * 0.25 ) );
+
+	// In units of the current view width, so a deep zoom wanders by as much of
+	// the screen as a shallow one does rather than teleporting.
+	p.escapeX += double( d ) * 0.25 * std::sin( tau * phase * 0.157 );
+	p.escapeY += double( d ) * 0.25 * std::sin( tau * phase * 0.113 + tau * 0.25 );
+}
+
+TapSet Glass( const LoopParams& params )
+{
+	return Taps( params.rig, params.tapCount, params.seed );
+}
+
+LoopState Resolve( const TapSet& glass, LoopParams& params, double driftPhase )
 {
 	LoopState state;
 
-	const TapSet glass = Taps( params.rig, params.tapCount, params.seed );
+	state.contractivity = Contractivity( glass );
+	ApplyDrift( params, driftPhase, state.contractivity );
 
 	state.loopGain = LoopGain( glass, params.zoom, params.gain, params.decay );
 

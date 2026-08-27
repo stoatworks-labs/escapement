@@ -109,6 +109,14 @@ EscapementPlugin::EscapementPlugin( bool overInput ) :
 	params[ PT_LENS ]     = 0.5f;       // exactly zero
 	params[ PT_VIGNETTE ] = 0.08f;
 
+	// Drift is ON by default, and that is a decision rather than a taste.
+	// A rig with the hands off converges and stops -- see ApplyDrift in Loop.h --
+	// so a plugin whose default is drift 0 is a plugin that dies about ten
+	// seconds after an operator drops it on a layer, which is precisely the
+	// complaint this was added to answer.
+	params[ PT_DRIFT ]      = 0.45f;
+	params[ PT_DRIFT_RATE ] = 0.520f;  // 0.08 Hz -- most of a minute to come round
+
 	params[ PT_GAIN ]       = 0.600f;   // 0.96
 	params[ PT_PEDESTAL ]   = 0.5f;     // exactly zero
 	params[ PT_GAMMA ]      = 0.5f;     // exactly 1.0
@@ -170,6 +178,8 @@ EscapementPlugin::EscapementPlugin( bool overInput ) :
 	SetParamInfof( PT_FOCUS, "Focus", FF_TYPE_STANDARD );
 	SetParamInfof( PT_LENS, "Lens", FF_TYPE_STANDARD );
 	SetParamInfof( PT_VIGNETTE, "Vignette", FF_TYPE_STANDARD );
+	SetParamInfof( PT_DRIFT, "Drift", FF_TYPE_STANDARD );
+	SetParamInfof( PT_DRIFT_RATE, "Drift Rate", FF_TYPE_STANDARD );
 
 	SetParamInfof( PT_GAIN, "Gain", FF_TYPE_STANDARD );
 	SetParamInfof( PT_PEDESTAL, "Pedestal", FF_TYPE_STANDARD );
@@ -232,7 +242,7 @@ EscapementPlugin::EscapementPlugin( bool overInput ) :
 	//-----------------------------------------------------------------------
 	for( unsigned int id = PT_RIG; id <= PT_FIELD_RATE; ++id )
 		SetParamGroup( id, "Rig" );
-	for( unsigned int id = PT_ZOOM; id <= PT_VIGNETTE; ++id )
+	for( unsigned int id = PT_ZOOM; id <= PT_DRIFT_RATE; ++id )
 		SetParamGroup( id, "Camera" );
 	for( unsigned int id = PT_GAIN; id <= PT_DECAY; ++id )
 		SetParamGroup( id, "Loop" );
@@ -603,6 +613,9 @@ LoopParams EscapementPlugin::CurrentLoop() const
 	p.panX   = PanFromParam( params[ PT_PAN_X ] ) * speed;
 	p.panY   = PanFromParam( params[ PT_PAN_Y ] ) * speed;
 
+	p.drift     = DriftFromParam( params[ PT_DRIFT ] );
+	p.driftRate = DriftRateFromParam( params[ PT_DRIFT_RATE ] );
+
 	p.focus    = FocusFromParam( params[ PT_FOCUS ] );
 	p.lens     = LensFromParam( params[ PT_LENS ] );
 	p.vignette = Clamp01( params[ PT_VIGNETTE ] );
@@ -842,7 +855,7 @@ void EscapementPlugin::Render( int width, int height, GLuint inputTexture, float
 
 	UpdateClock();
 
-	const LoopParams p = CurrentLoop();
+	LoopParams p = CurrentLoop();
 
 	// A resize is the one thing that clears the store. Nothing that can be
 	// reached from a knob does -- see Loop.h.
@@ -870,30 +883,70 @@ void EscapementPlugin::Render( int width, int height, GLuint inputTexture, float
 		fields = 1;
 
 	lastFields = fields;
-	lastState  = Resolve( p );
 
-	// The spin is integrated, not computed from the clock. `time * rate` would
-	// rescale the whole history the instant the Spin knob moved.
-	spinPhase += double( p.spin ) * elapsed;
+	// The hands move on FIELD time, not on wall time.
+	//
+	// `fields / fieldRate` is how many seconds the RIG thinks have passed, which
+	// is the same as the host's seconds whenever the rig is keeping up and is
+	// deliberately not the same when it is not. Everything else in this plugin
+	// is a function of how many times the loop has gone round, and drift has to
+	// be as well, or a rendered frame stops being a function of the field count:
+	// pinning the fields in the harness would leave the hands moving at whatever
+	// speed the machine happened to render at, and 400 fields offline -- which
+	// take about a fifth of a second of wall clock -- would drift by a fifth of
+	// a second's worth instead of by 400 fields' worth. That is exactly what it
+	// did, and it made four live rigs measure as dead.
+	//
+	// Applied AFTER CurrentLoop and before Resolve, so the taps are built from
+	// the drifted camera rather than the parked one.
+	const double riggedSeconds = ( p.fieldRate > 0.0f ) ? double( fields ) / double( p.fieldRate ) : 0.0;
+
+	// The glass, once. Drift never changes which rig this is.
+	const TapSet glass = Glass( p );
+
+	// Seconds of rig time per FIELD, which is what the hands advance by between
+	// one trip round the loop and the next.
+	const double perField = ( p.fieldRate > 0.0f ) ? 1.0 / double( p.fieldRate ) : 0.0;
+
+	// The spin is integrated, not computed from the clock -- `time * rate` would
+	// rescale the whole history the instant the Spin knob moved -- and it runs on
+	// field time for the same reason drift does, just above.
+	spinPhase += double( p.spin ) * riggedSeconds;
 	spinPhase = spinPhase - std::floor( spinPhase );
 
-	if( lastState.droppedTaps > 0 && p.rig != Rig::Fern )
-		diag::warn( "rig dropped " + std::to_string( lastState.droppedTaps ) + " singular tap(s)" );
-
-	//---------------------------------------------------------------------
-	// The iterator bank, if anything is going to read it.
-	//---------------------------------------------------------------------
 	const bool needsBank = !RigUsesTaps( p.rig ) || p.inject == Inject::Iterator;
-	if( needsBank && fields > 0 )
-		RunIterator( p, width, height );
 
 	//---------------------------------------------------------------------
-	// The loop.
+	// The loop, one field at a time, with the hands moving between them.
+	//
+	// The bank is inside this loop too, not outside it: its picture is a
+	// function of the drifted Julia constant, so hoisting it would make the
+	// escape rigs depend on the host's frame rate in the same way the taps
+	// would. It is bounded by Clock::kMaxFieldsPerFrame, so the worst case is
+	// eight bank passes in a stalled frame rather than an unbounded number.
 	//---------------------------------------------------------------------
 	for( int i = 0; i < fields; ++i )
-		RunField( p, lastState, fieldCounter + i, inputTexture, maxU, maxV );
+	{
+		LoopParams field = p;
+
+		double phase = driftPhase + double( p.driftRate ) * perField * double( i + 1 );
+		phase        = phase - std::floor( phase );
+
+		lastState = Resolve( glass, field, phase );
+
+		if( i == 0 && lastState.droppedTaps > 0 && p.rig != Rig::Fern )
+			diag::warn( "rig dropped " + std::to_string( lastState.droppedTaps ) + " singular tap(s)" );
+
+		if( needsBank )
+			RunIterator( field, width, height );
+
+		RunField( field, lastState, fieldCounter + i, inputTexture, maxU, maxV );
+	}
 
 	fieldCounter += fields;
+
+	driftPhase += double( p.driftRate ) * perField * double( fields );
+	driftPhase = driftPhase - std::floor( driftPhase );
 
 	//---------------------------------------------------------------------
 	// Display.

@@ -114,6 +114,38 @@ screenshot scrolls the document: with a `<select>` focused, that scroll changes
 its value, so the rig silently switched from Mirror to Kaleidoscope between two
 reads and looked like a wandering-parameter bug. Blur the active element first.
 
+## They all died after a few seconds (2026-08-27)
+
+Reported from watching them: a burst of motion, then nothing. Measured with a
+new `esctest --liveness` before touching anything — seven of twelve presets had a
+structural change of literally 0.0000 per field, and the five that "moved" were
+flickering injected grain while the picture stood still. The first version of
+that metric counted every pixel and made those five look healthy; averaging
+32x32 blocks first, so grain cancels, is what made the problem legible.
+
+The cause is Banach's fixed point theorem and there is no tuning that avoids it —
+see AGENTS.md. The fix is `ApplyDrift`, the operator's hands, on by default
+everywhere. Three things it took to make it actually work:
+
+**Drift on wall time made the harness lie.** The phase advanced on host seconds
+while the harness pins the field count, so 400 offline fields — a fifth of a
+second of wall clock — drifted by a fifth of a second's worth. Four live rigs
+measured as dead. Everything animated now advances on `fields / fieldRate`.
+
+**Depth has to scale with the rig's compliance.** Gentle drift tuned on the
+mirror rigs did nothing at all to the IFS rigs, and raising it five times over
+still did nothing: a camera nudge displaces an attractor by `t/(1-c)`, and
+Sierpinski's `1-c` is 0.5 where a mirror rig's is 0.02. Scaling by `1-c` moved
+every IFS rig into life in one go.
+
+**Per-frame drift broke frame-rate independence**, and `--rate` caught it within
+a minute. Drift and the iterator bank both moved inside the per-field loop.
+
+The Globe preset was rebuilt on the way: it had been left with a zoom above 1:1
+from before the tunnel finding, so its loop filled to a uniform field and the
+sphere came out as a flat magenta ball. A rescan needs something to WRAP, and a
+loop that has filled has no texture left in it.
+
 ## sync.sh cannot see any repo (found 2026-08-27, NOT fixed)
 
 `stoatworks-backend/resolume-demo/sync.sh` computes

@@ -35,6 +35,7 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 - Loop gain predicts the picture: `./build/esctest --stability`
 - A hostile rig leaves no NaN: `./build/esctest --guard`
 - Every preset draws something with structure in it: `./build/esctest --presets`
+- Every preset is still MOVING once settled: `./build/esctest --liveness`
 - No dead controls: `python3 tools/sweep.py`
 
 ## Notes
@@ -50,6 +51,20 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
   inflates into a smooth disc with no structure in it.
 - **The rig keeps its own clock.** Fields, not frames. `esctest --rate` is the
   test that fails if anyone makes it one trip round the loop per rendered frame.
+- **A rig with the hands off goes still, and that is Banach's theorem, not a
+  bug.** A contraction mapping with constant coefficients has exactly one
+  attracting fixed point; the loop reaches its attractor and then maps it to
+  itself for ever. Endless zoom does not help — a self-similar attractor
+  magnified is the same attractor. **Drift** is the only thing that keeps a rig
+  alive, it is on by default in every preset, and `--liveness` is the test.
+- **Drift depth scales with the rig's compliance, `1 - c`.** A camera nudge moves
+  an attractor by about `t/(1-c)`, which spans two orders of magnitude between
+  Sierpinski (stiff) and a mirror rig at 0.98 (compliant). One depth cannot serve
+  both; the first attempt proved it.
+- **Anything animated runs on FIELD time**, never the host clock. Drift and spin
+  advance by `fields / fieldRate`, per field, inside the loop — hoisting either
+  to once per frame makes the picture depend on the host's frame rate and
+  `--rate` fails.
 - **A parameter change must NOT clear the frame store** — the opposite of the
   fleet's GPU habit. The store is the instrument's memory.
 - **Every `df64` intermediate is `precise`.** Without it Apple's compiler

@@ -60,6 +60,12 @@ enum Param
 	P_ESCAPE_ZOOM,
 	P_PRECISION,
 
+	// Appended rather than filed under Camera where they belong, so that the
+	// twelve rows below did not all have to be re-counted by hand when drift
+	// arrived. The order here is the order kPresetParamIDs binds them.
+	P_DRIFT,
+	P_DRIFT_RATE,
+
 	kParamCount
 };
 
@@ -75,7 +81,13 @@ struct Preset
 // Reading the columns: rig, taps, seed, symmetry, mirror, zoom, rotate, pan x,
 // pan y, focus, lens, vignette, gain, pedestal, gamma, hue, saturation, clip,
 // noise, decay, inject, level, size, palette, sphere, tilt, spin, iterations,
-// escape zoom, precision.
+// escape zoom, precision, drift, drift rate.
+//
+// Every preset carries drift, and none of them carries zero. A rig with the
+// hands off is a contraction mapping with constant coefficients: it converges on
+// its attractor and then stands perfectly still, for ever. See ApplyDrift in
+// Loop.h. A factory preset that dies ten seconds after it is chosen is not a
+// working operating point, whatever it looks like in a screenshot.
 //---------------------------------------------------------------------------
 inline constexpr Preset kPresets[] = {
 	//-------------------------------------------------------------------
@@ -117,7 +129,7 @@ inline constexpr Preset kPresets[] = {
 	    0.550f, // level 0.19
 	    0.720f, // size 0.37
 	    0.0f,   // palette: the signal's own colour
-	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.50f, 0.523f } },
 
 	//-------------------------------------------------------------------
 	// Three half-scale taps on a triangle. The gasket is the attractor, so
@@ -142,7 +154,7 @@ inline constexpr Preset kPresets[] = {
 	    4.0f,   // inject: noise
 	    0.500f, // level 0.14
 	    1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.35f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// Four third-scale taps and a three-fold fold. The taps make the Koch
@@ -164,7 +176,7 @@ inline constexpr Preset kPresets[] = {
 	    0.10f, 0.153f, // a little persistence, so the thin line accumulates
 	    4.0f,   // inject: noise
 	    0.500f, 1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.35f, 0.435f } },
 
 	{ "Dragon",
 	  { 3.0f,
@@ -178,7 +190,7 @@ inline constexpr Preset kPresets[] = {
 	    0.10f, 0.0f,
 	    4.0f, 0.500f, 1.0f,
 	    2.0f,   // Ice
-	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.55f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// Barnsley's fern. One of its four maps is singular -- the stem is a
@@ -199,7 +211,7 @@ inline constexpr Preset kPresets[] = {
 	            // where the fronds meet and the stem is already missing
 	    0.12f, 0.0f,
 	    4.0f, 0.200f, 1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 1.00f, 0.520f } },
 
 	//-------------------------------------------------------------------
 	// A mirror wedge. The taps are unit-scale rotations, so the ONLY
@@ -223,7 +235,7 @@ inline constexpr Preset kPresets[] = {
 	    0.02f, 0.153f, // decay 0.15
 	    1.0f,   // inject: dot
 	    0.780f, 0.420f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.45f, 0.523f } },
 
 	//-------------------------------------------------------------------
 	// A rig built from a number. Nudge the seed for a different one --
@@ -241,7 +253,7 @@ inline constexpr Preset kPresets[] = {
 	    0.10f, 0.0f,
 	    4.0f, 0.500f, 1.0f,
 	    4.0f,   // Spectrum
-	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.40f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// The iterator bank, with c fixed. The loop is still running -- the
@@ -263,7 +275,7 @@ inline constexpr Preset kPresets[] = {
 	    0.0f, 0.5f, 0.5f,
 	    0.571f, // 256 iterations
 	    0.0f,   // no zoom
-	    0.0f } },// single precision is plenty at 1:1
+	    0.0f , 0.60f, 0.523f } },// single precision is plenty at 1:1
 
 	//-------------------------------------------------------------------
 	// The deep zoom. Extended precision, because single runs out of
@@ -283,7 +295,7 @@ inline constexpr Preset kPresets[] = {
 	    0.850f, // 1060 iterations -- a deep zoom needs them, and starving it
 	            // looks exactly like a precision failure: flat, blocky, wrong
 	    0.462f, // 1e6 magnification
-	    1.0f } },// Extended
+	    1.0f , 0.70f, 0.450f } },// Extended
 
 	//-------------------------------------------------------------------
 	// The rescan: the rig's screen is a sphere and the camera is looking at
@@ -293,20 +305,32 @@ inline constexpr Preset kPresets[] = {
 	{ "Globe",
 	  { 9.0f,   // Globe
 	    -1.0f, -1.0f, 0.0f, 0.0f,
-	    0.775f, // zoom 1.016
-	    0.660f,
+	    0.208f, // zoom 0.98 -- the SAME rig as Mirror Tunnel underneath, because
+	            // that is what a rescan is: an ordinary feedback loop, re-shot off
+	            // a curved screen. Built once with a zoom above 1:1 instead, it
+	            // filled to a uniform field and the globe came out as a flat
+	            // magenta ball with nothing on it -- a sphere needs something to
+	            // WRAP, and a loop that has filled has no texture left in it.
+	    0.699f, // rotate 0.01 rad per field
 	    0.5f, 0.5f,
-	    0.24f, 0.5f, 0.20f,
-	    0.500f, // gain 0.80
+	    0.040f, // focus 0.2 -- sharp enough to keep the nested edges
+	    0.5f,
+	    0.20f,  // vignette
+	    0.600f, // gain 0.96
 	    0.5f, 0.5f,
-	    0.672f, 0.58f, 0.786f,
-	    0.0f, 0.194f, // decay 0.19 -- 0.99 round the loop
-	    1.0f, 0.671f, 0.560f,
+	    0.658f, // hue 0.002 turns per field
+	    0.55f,
+	    0.786f, // clip 0.85
 	    0.0f,
+	    0.050f, // decay 0.05 -- 1.01 round the loop
+	    3.0f,   // inject: grid, so there is an edge for the camera to find
+	    0.550f, // level 0.19
+	    0.720f, // size 0.37
+	    0.0f,   // palette: the signal's own colour
 	    1.0f,   // fully spherical
 	    0.611f, // tilt 0.35 rad
 	    0.612f, // spin 0.05 turns a second
-	    -1.0f, -1.0f, -1.0f } },
+	    -1.0f, -1.0f, -1.0f, 0.40f, 0.435f } },
 
 	//-------------------------------------------------------------------
 	// Hot, soft and just over unity: the operating point where a rig stops
@@ -335,7 +359,7 @@ inline constexpr Preset kPresets[] = {
 	    0.0f,   // no persistence -- it is what flattens a Turing pattern into a wash
 	    0.0f,   // nothing injected: the loop finds its own picture
 	    0.0f, -1.0f,
-	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.55f, 0.600f } },
 
 	//-------------------------------------------------------------------
 	// Zoom and rotation together, which is what turns a tunnel into a
@@ -354,7 +378,7 @@ inline constexpr Preset kPresets[] = {
 	    0.03f, 0.100f, // decay 0.098
 	    1.0f, 0.608f, 0.300f,
 	    2.0f,   // Ice
-	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f } },
+	    0.0f, 0.5f, 0.5f, -1.0f, -1.0f, -1.0f , 0.50f, 0.523f } },
 };
 
 inline constexpr int kCount = int( sizeof( kPresets ) / sizeof( kPresets[ 0 ] ) );

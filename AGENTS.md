@@ -58,10 +58,12 @@ per rendered frame:
   2 CurrentLoop()          0..1 params -> engineering units
   3 store.Ensure(w,h)      allocate; a RESIZE clears, a knob never does
   4 clock.Advance(dt)      -> a whole number of FIELDS at the rig's own rate
-  5 Resolve(params)        tap set -> compose camera -> invert -> LoopState
-  6 [if needed] iterator bank pass
-  7 for each field:  loop pass  (store -> store, ping-pong, mips)
-  8 display pass           palette, bloom, rescan, composite with the clip
+  5 Glass(params)          the tap set, once -- drift never changes which rig
+  6 for each field:
+      ApplyDrift + Resolve   the hands move BETWEEN fields, not between frames
+      [if needed] iterator bank pass
+      loop pass              (store -> store, ping-pong, mips)
+  7 display pass           palette, bloom, rescan, composite with the clip
 ```
 
 ### Directories
@@ -79,6 +81,40 @@ per rendered frame:
 ## Traps
 
 Ordered by how much time they cost.
+
+### A rig left alone goes still, and no amount of tuning fixes it
+
+This is the one that will be reported as a bug, and it is a theorem.
+
+The loop is a contraction mapping. With constant parameters it has, by Banach,
+**exactly one attracting fixed point**, and the iteration converges on it
+geometrically. That is the whole basis of the plugin — it is why a Sierpinski
+gasket assembles itself out of sensor noise — and it is also why, about ten
+seconds later, nothing moves again. The attractor maps to itself. Every
+subsequent field is the previous field.
+
+Endless zoom does not rescue it, and it looks as though it should: the attractor
+of a self-similar system, magnified by its own similarity ratio, is the same
+attractor. A gasket zoomed by two is a gasket. The camera can zoom for an hour.
+
+The only way out is for the **operator** to change, which on the rig this models
+is literally a person: the Light Herder's device is played by somebody walking
+the cameras around while it runs. `ApplyDrift` in Loop.cpp is those hands, it is
+on by default in every preset, and `esctest --liveness` is the test that fails if
+anyone turns it off or lets it stop reaching the picture.
+
+Two things about it are easy to get wrong:
+
+- **Depth has to scale with compliance.** A camera nudge `t` displaces an
+  attractor by about `t / ( 1 - c )`. Sierpinski contracts by 2 and needs a
+  shove; a mirror rig at 0.98 would be thrown off the screen by the same shove.
+  Gentle drift tuned on the mirror rigs moved the IFS rigs by a thousandth of the
+  frame per second, which is a still picture with extra arithmetic.
+- **It has to advance per FIELD.** Drift makes the hands a function of time, so a
+  field at phase 0.31 differs from one at 0.30. Advance it once per rendered
+  frame and sixty fields delivered as one frame use one hand position where sixty
+  frames of one use sixty — the picture then depends on the host's frame rate,
+  which is the one thing this plugin promises it does not. `--rate` caught it.
 
 ### The taps sum. Averaging them deletes the attractor
 

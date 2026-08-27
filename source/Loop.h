@@ -83,6 +83,10 @@ struct LoopParams
 	float panX   = 0.0f;
 	float panY   = 0.0f;
 
+	// The operator's hands.
+	float drift     = 0.0f; ///< How far they wander. 0 is a rig left alone.
+	float driftRate = 0.05f;///< Cycles per second.
+
 	// Optics.
 	float focus    = 0.0f;
 	float lens     = 0.0f;
@@ -143,6 +147,10 @@ struct LoopState
 	/// Worst-case gain around the loop, camera and proc amp included.
 	float loopGain = 1.0f;
 
+	/// The tap set's own contraction, before the camera. What decides how stiff
+	/// the attractor is against the hands -- see ApplyDrift.
+	float contractivity = 1.0f;
+
 	/// Sum of the surviving taps' weights. NOT a divisor -- the taps sum, and
 	/// dividing by this is exactly the averaging that deletes the attractor.
 	/// It is uploaded as a diagnostic and used by `LoopGain()`.
@@ -160,8 +168,88 @@ struct LoopState
 /// At or above 1 the picture grows until the clip stage stops it.
 float LoopGain( const TapSet& tapsBeforeCamera, float zoom, float gain, float decay );
 
-/// Build the per-frame loop state from resolved parameters.
-LoopState Resolve( const LoopParams& params );
+/**
+    Move the operator's hands, at `phase` turns of the drift clock.
+
+    ## Why this exists at all
+
+    A loop whose parameters are constant is a contraction mapping with constant
+    coefficients, and Banach's fixed point theorem then says exactly one thing
+    about it: there is precisely one attracting fixed point and the iteration
+    converges on it. Which is what the whole plugin is built on -- it is why the
+    Sierpinski gasket arrives out of noise -- and it is also why, once it has
+    arrived, **nothing ever moves again**. The attractor maps to itself. Every
+    subsequent field is the same field.
+
+    Endless zoom does not rescue it, and the reason is worth stating because it
+    looks like it should: the attractor of a self-similar system zoomed by its
+    own similarity ratio is the same attractor. A gasket magnified by two is a
+    gasket. The camera can zoom for an hour and the picture will not change.
+
+    So a rig that is left alone goes still, correctly, and the only way out is
+    for the operator to change. On the device this models that is not a figure
+    of speech -- the Light Herder's rig is played by somebody walking the cameras
+    back and forth and turning knobs while it runs, and the video's own
+    description says so. Drift is those hands.
+
+    ## Mutually irrational rates
+
+    The five modulations run at 1, 0.732, 0.517, 0.313 and 0.211 times the drift
+    rate. No two of those have a rational ratio, so the combination has no
+    period: the rig never returns to a state it has been in, and an operator
+    watching for ten minutes never sees it repeat. Round them to 1, 0.75, 0.5,
+    0.25 and the whole thing closes into a four-second loop.
+
+    Pan Y runs a quarter cycle behind Pan X for vectrix's reason: in phase, every
+    excursion is along the 45-degree diagonal, which reads as one shake rather
+    than as wandering.
+
+    ## The camera depths are scaled by the rig's COMPLIANCE, and have to be
+
+    A nudge of the camera does not move an attractor by the size of the nudge.
+    The attractor is the fixed point of the whole composed operator, so a
+    per-field camera translation `t` displaces it by about `t / ( 1 - c )` where
+    `c` is the tap set's contractivity -- and then it stops, because the
+    displaced attractor is just as fixed as the old one was.
+
+    That factor spans two orders of magnitude across the rigs here. Sierpinski
+    contracts by 2, so it is **stiff**: it shrugs off anything small and needs a
+    shove. A mirror rig running at 0.98 has `1 - c = 0.02`, so the same shove
+    would throw the picture off the screen. A single depth cannot serve both, and
+    the first attempt at drift proved it -- gentle enough for the mirror rigs, it
+    moved the IFS rigs by about a thousandth of the frame per second, which is a
+    still picture with extra arithmetic.
+
+    So the camera depths below are quoted for a compliance of 1 and multiplied by
+    `1 - c`. The injection, the Julia constant and the escape centre are NOT
+    scaled: none of them is inside the geometric loop, so none of them is stiff.
+*/
+void ApplyDrift( LoopParams& params, double phase, float contractivity );
+
+/// The glass alone: the tap set before the camera, and before the hands.
+///
+/// Split out because it is the expensive half -- a seeded rig plays a 20,000
+/// step chaos game to measure its own framing -- and because drift never
+/// changes it. One of these per FRAME; a `Resolve` per FIELD.
+TapSet Glass( const LoopParams& params );
+
+/**
+    Build one field's loop state, moving the operator's hands on the way.
+
+    Called **once per field, not once per frame**, and that is not a detail.
+    Drift makes the operator's hands a function of time, so a field rendered at
+    drift phase 0.31 is a different field from one rendered at 0.30 -- and if the
+    hands only moved once per rendered frame, then sixty fields delivered as one
+    frame of sixty would use one hand position where sixty frames of one would
+    use sixty. The picture would depend on the host's frame rate, which is the
+    one thing this plugin promises it does not. `esctest --rate` caught exactly
+    that and is why this is shaped like this.
+
+    `params` is taken by reference and comes back DRIFTED, because the caller
+    needs the same drifted injection position and Julia constant that the taps
+    were built from -- they go to the shader as uniforms.
+*/
+LoopState Resolve( const TapSet& glass, LoopParams& params, double driftPhase );
 
 /**
     The rig's clock.

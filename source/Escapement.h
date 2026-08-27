@@ -116,7 +116,8 @@ private:
 		PT_GAIN, PT_PEDESTAL, PT_GAMMA, PT_HUE_ROTATE, PT_SATURATION, PT_CLIP, PT_NOISE, PT_DECAY,
 		PT_INJECT, PT_INJECT_LEVEL, PT_INJECT_SIZE,
 		PT_PALETTE, PT_SPHERE, PT_TILT, PT_SPIN,
-		PT_ITERATIONS, PT_ESCAPE_ZOOM, PT_PRECISION
+		PT_ITERATIONS, PT_ESCAPE_ZOOM, PT_PRECISION,
+		PT_DRIFT, PT_DRIFT_RATE
 	};
 
 	bool BuildShaders();
@@ -188,6 +189,12 @@ private:
 	int secondsVotes    = 0;
 	int millisVotes     = 0;
 	bool hostTimeSeen   = false;
+
+	/// Accumulated drift phase, in turns. Integrated for the same reason as the
+	/// spin below: `time * rate` rescales the whole history the instant the rate
+	/// changes, so nudging Drift Rate an hour into a set would jump the hands to
+	/// a different place instead of speeding them up from where they were.
+	double driftPhase = 0.0;
 
 	/// Accumulated rescan spin, in turns. Integrated rather than computed as
 	/// `time * rate` for the reason vectrix integrates its oscillator phase: the

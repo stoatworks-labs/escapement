@@ -829,6 +829,8 @@ const zoomFromParam = (v) => 1 + signedFromParam(v, 0.1, 3);
 const rotateFromParam = (v) => signedFromParam(v, 0.1, 2.5);
 const panFromParam = (v) => signedFromParam(v, 0.05, 2.5);
 const speedFromParam = (v) => (v < 0.02 ? 0 : Math.pow(4, clamp01(v) * 2 - 1));
+const driftFromParam = (v) => clamp01(v);
+const driftRateFromParam = (v) => exponential(v, 0.005, 1);
 const focusFromParam = (v) => clamp01(v) * 5;
 const lensFromParam = (v) => signedFromParam(v, 1, 1.6);
 const gainFromParam = (v) => clamp01(v) * 1.6;
@@ -1170,6 +1172,51 @@ function withCamera(set, zoom, rotate, panX, panY) {
 //===========================================================================
 
 /**
+ * Move the operator's hands, at `phase` turns of the drift clock.
+ *
+ * **This is what stops a rig going still.** A loop whose parameters are constant
+ * is a contraction mapping with constant coefficients, and Banach's theorem then
+ * says there is exactly one attracting fixed point: the picture converges on the
+ * attractor, the attractor maps to itself, and nothing moves again. Endless zoom
+ * does not rescue it either — a self-similar attractor magnified by its own
+ * ratio is the same attractor.
+ *
+ * The camera depths are scaled by the rig's COMPLIANCE, `1 - c`. A camera nudge
+ * `t` displaces an attractor by about `t / ( 1 - c )`, and that factor spans two
+ * orders of magnitude here: Sierpinski contracts by 2 and shrugs off anything
+ * small, while a mirror rig at 0.98 would be thrown off the screen by the same
+ * shove. The injection, the Julia constant and the escape centre are not scaled,
+ * because none of them is inside the geometric loop.
+ *
+ * The rates are mutually irrational, so the combination has no period.
+ */
+function applyDrift(p, phase, contractivity) {
+  if (p.drift <= 0) return;
+
+  const tau = 6.283185307179586;
+  const d = p.drift;
+
+  const loop = contractivity * Math.abs(p.zoom);
+  const compliance = 1 - (loop > 0.98 ? 0.98 : loop);
+
+  p.zoom += d * compliance * 0.100 * Math.sin(tau * phase);
+  p.rotate += d * compliance * 0.800 * Math.sin(tau * phase * 0.732);
+  p.panX += d * compliance * 0.300 * Math.sin(tau * phase * 0.517);
+  p.panY += d * compliance * 0.300 * Math.sin(tau * phase * 0.313 + tau * 0.25);
+
+  p.hueRotate += d * 0.0015 * Math.sin(tau * phase * 0.211);
+
+  p.injectX += d * 0.45 * Math.sin(tau * phase * 0.421);
+  p.injectY += d * 0.45 * Math.sin(tau * phase * 0.277 + tau * 0.25);
+
+  p.juliaX += d * 0.12 * Math.sin(tau * phase * 0.611);
+  p.juliaY += d * 0.12 * Math.sin(tau * phase * 0.389 + tau * 0.25);
+
+  p.escapeX += d * 0.25 * Math.sin(tau * phase * 0.157);
+  p.escapeY += d * 0.25 * Math.sin(tau * phase * 0.113 + tau * 0.25);
+}
+
+/**
  * Worst-case AMPLITUDE gain: `gain x sum of tap weights`, plus persistence.
  *
  * Deliberately not the same question as contractivity(), which asks whether the
@@ -1184,8 +1231,20 @@ function loopGain(set, gain, decay) {
   return gain * weightSum + decay;
 }
 
-function resolve(p) {
-  const glass = taps(p.rig, p.tapCount, p.seed);
+/// The glass alone. Expensive for seeded rigs, and drift never changes it.
+function glassFor(p) {
+  return taps(p.rig, p.tapCount, p.seed);
+}
+
+/**
+ * One FIELD's loop state. Called once per field, not once per frame: drift makes
+ * the hands a function of time, so hoisting it would make the picture depend on
+ * the host's frame rate — the one thing this plugin promises it does not.
+ */
+function resolve(glass, p, driftPhase) {
+  const c = contractivity(glass);
+  applyDrift(p, driftPhase, c);
+
   const gain = loopGain(glass, p.gain, p.decay);
   const withCam = withCamera(glass, p.zoom, p.rotate, p.panX, p.panY);
 
@@ -1208,7 +1267,7 @@ function resolve(p) {
     dropped,
     loopGain: gain,
     weightSum: weightSum > 0 ? weightSum : 1,
-    contractivity: contractivity(glass),
+    contractivity: c,
   };
 }
 
@@ -1248,18 +1307,18 @@ const MAX_FIELDS_PER_FRAME = 8;
 //===========================================================================
 
 const PRESETS = {
-  'Mirror Tunnel': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.08, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Sierpinski': { rig: 1, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.05, lens: 0.5, vignette: 0.1, gain: 0.7, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Koch Snowflake': { rig: 2, symmetry: 0.18, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.08, gain: 0.812, pedestal: 0.5, gamma: 0.5, hueRotate: 0.6, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0.153, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Dragon': { rig: 3, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.06, lens: 0.5, vignette: 0.12, gain: 0.68, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Barnsley Fern': { rig: 4, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0, gain: 0.56, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.45, clip: 0.5, noise: 0.12, decay: 0, inject: 4, injectLevel: 0.2, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Kaleidoscope': { rig: 5, taps: 0.6, symmetry: 0, foldMirror: 0, zoom: 0.329, rotate: 0.64, panX: 0.5, panY: 0.5, focus: 0.2, lens: 0.5, vignette: 0.3, gain: 0.625, pedestal: 0.5, gamma: 0.5, hueRotate: 0.68, saturation: 0.6, clip: 0.786, noise: 0.02, decay: 0.153, inject: 1, injectLevel: 0.78, injectSize: 0.42, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Seeded Rig': { rig: 6, taps: 0.3, seed: 0.402, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.06, lens: 0.5, vignette: 0.12, gain: 0.594, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 4, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Julia Drift': { rig: 7, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 1, noise: 0, decay: 0.55, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.571, escapeZoom: 0, precision: 0 },
-  'Mandelbrot Dive': { rig: 8, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.5, clip: 1, noise: 0, decay: 0.2, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.85, escapeZoom: 0.462, precision: 1 },
-  'Globe': { rig: 9, symmetry: 0, foldMirror: 0, zoom: 0.775, rotate: 0.66, panX: 0.5, panY: 0.5, focus: 0.24, lens: 0.5, vignette: 0.2, gain: 0.5, pedestal: 0.5, gamma: 0.5, hueRotate: 0.672, saturation: 0.58, clip: 0.786, noise: 0, decay: 0.194, inject: 1, injectLevel: 0.671, injectSize: 0.56, palette: 0, sphere: 1, tilt: 0.611, spin: 0.612 },
-  'Cell Structures': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.3, rotate: 0.54, panX: 0.5, panY: 0.5, focus: 0.18, lens: 0.42, vignette: 0.28, gain: 0.66, pedestal: 0.48, gamma: 0.5, hueRotate: 0.7, saturation: 0.68, clip: 0.643, noise: 0.14, decay: 0, inject: 0, injectLevel: 0, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5 },
-  'Galaxy': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.24, rotate: 0.76, panX: 0.5, panY: 0.5, focus: 0.12, lens: 0.46, vignette: 0.18, gain: 0.62, pedestal: 0.5, gamma: 0.5, hueRotate: 0.69, saturation: 0.62, clip: 0.786, noise: 0.03, decay: 0.1, inject: 1, injectLevel: 0.608, injectSize: 0.3, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5 },
+  'Mirror Tunnel': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.08, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
+  'Sierpinski': { rig: 1, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.05, lens: 0.5, vignette: 0.1, gain: 0.7, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.35, driftRate: 0.435 },
+  'Koch Snowflake': { rig: 2, symmetry: 0.18, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.08, gain: 0.812, pedestal: 0.5, gamma: 0.5, hueRotate: 0.6, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0.153, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.35, driftRate: 0.435 },
+  'Dragon': { rig: 3, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.06, lens: 0.5, vignette: 0.12, gain: 0.68, pedestal: 0.5, gamma: 0.5, hueRotate: 0.64, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.55, driftRate: 0.435 },
+  'Barnsley Fern': { rig: 4, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0, gain: 0.56, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.45, clip: 0.5, noise: 0.12, decay: 0, inject: 4, injectLevel: 0.2, injectSize: 1, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 1, driftRate: 0.52 },
+  'Kaleidoscope': { rig: 5, taps: 0.6, symmetry: 0, foldMirror: 0, zoom: 0.329, rotate: 0.64, panX: 0.5, panY: 0.5, focus: 0.2, lens: 0.5, vignette: 0.3, gain: 0.625, pedestal: 0.5, gamma: 0.5, hueRotate: 0.68, saturation: 0.6, clip: 0.786, noise: 0.02, decay: 0.153, inject: 1, injectLevel: 0.78, injectSize: 0.42, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.45, driftRate: 0.523 },
+  'Seeded Rig': { rig: 6, taps: 0.3, seed: 0.402, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0.06, lens: 0.5, vignette: 0.12, gain: 0.594, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 0.857, noise: 0.1, decay: 0, inject: 4, injectLevel: 0.5, injectSize: 1, palette: 4, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.4, driftRate: 0.435 },
+  'Julia Drift': { rig: 7, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.62, saturation: 0.5, clip: 1, noise: 0, decay: 0.55, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.571, escapeZoom: 0, precision: 0, drift: 0.6, driftRate: 0.523 },
+  'Mandelbrot Dive': { rig: 8, symmetry: 0, foldMirror: 0, zoom: 0.5, rotate: 0.5, panX: 0.5, panY: 0.5, focus: 0, lens: 0.5, vignette: 0.1, gain: 0, pedestal: 0.5, gamma: 0.5, hueRotate: 0.56, saturation: 0.5, clip: 1, noise: 0, decay: 0.2, inject: 5, injectLevel: 0.869, injectSize: 1, palette: 3, sphere: 0, tilt: 0.5, spin: 0.5, iterations: 0.85, escapeZoom: 0.462, precision: 1, drift: 0.7, driftRate: 0.45 },
+  'Globe': { rig: 9, symmetry: 0, foldMirror: 0, zoom: 0.208, rotate: 0.699, panX: 0.5, panY: 0.5, focus: 0.04, lens: 0.5, vignette: 0.2, gain: 0.6, pedestal: 0.5, gamma: 0.5, hueRotate: 0.658, saturation: 0.55, clip: 0.786, noise: 0, decay: 0.05, inject: 3, injectLevel: 0.55, injectSize: 0.72, palette: 0, sphere: 1, tilt: 0.611, spin: 0.612, drift: 0.4, driftRate: 0.435 },
+  'Cell Structures': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.3, rotate: 0.54, panX: 0.5, panY: 0.5, focus: 0.18, lens: 0.42, vignette: 0.28, gain: 0.66, pedestal: 0.48, gamma: 0.5, hueRotate: 0.7, saturation: 0.68, clip: 0.643, noise: 0.14, decay: 0, inject: 0, injectLevel: 0, palette: 0, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.55, driftRate: 0.6 },
+  'Galaxy': { rig: 0, symmetry: 0, foldMirror: 0, zoom: 0.24, rotate: 0.76, panX: 0.5, panY: 0.5, focus: 0.12, lens: 0.46, vignette: 0.18, gain: 0.62, pedestal: 0.5, gamma: 0.5, hueRotate: 0.69, saturation: 0.62, clip: 0.786, noise: 0.03, decay: 0.1, inject: 1, injectLevel: 0.608, injectSize: 0.3, palette: 2, sphere: 0, tilt: 0.5, spin: 0.5, drift: 0.5, driftRate: 0.523 },
 };
 
 //===========================================================================
@@ -1324,6 +1383,7 @@ class EscapementRenderer {
     this.lastTime = null;
     this.fieldCounter = 0;
     this.spinPhase = 0;
+    this.driftPhase = 0;
     this.lastVariant = null;
   }
 
@@ -1380,6 +1440,9 @@ class EscapementRenderer {
       rotate: rotateFromParam(params.get('rotate')) * speed,
       panX: panFromParam(params.get('panX')) * speed,
       panY: panFromParam(params.get('panY')) * speed,
+
+      drift: driftFromParam(params.get('drift')),
+      driftRate: driftRateFromParam(params.get('driftRate')),
 
       focus: focusFromParam(params.get('focus')),
       lens: lensFromParam(params.get('lens')),
@@ -1591,26 +1654,41 @@ class EscapementRenderer {
     // switched on has still had one field through it.
     if (fields === 0 && (resized || switched || rewound)) fields = 1;
 
-    const state = resolve(p);
+    // The glass, once. Drift never changes which rig this is.
+    const glass = glassFor(p);
 
-    // Integrated, not `time * rate`: the product rescales the whole history the
-    // instant the Spin knob moves.
-    this.spinPhase += p.spin * elapsed;
+    // Seconds of RIG time per field. Everything animated runs on this rather
+    // than on the host's clock, so a rendered frame stays a pure function of
+    // how many times the loop has been round.
+    const perField = p.fieldRate > 0 ? 1 / p.fieldRate : 0;
+
+    this.spinPhase += p.spin * perField * fields;
     this.spinPhase -= Math.floor(this.spinPhase);
 
-    //---------------------------------------------------------------------
-    // The iterator bank, if anything is going to read it.
-    //---------------------------------------------------------------------
     const needsBank = !rigUsesTaps(p.rig) || p.inject === 5;
-    if (needsBank && fields > 0) this.runIterator(p, width, height);
 
     //---------------------------------------------------------------------
-    // The loop.
+    // The loop, one field at a time, with the hands moving between them.
     //---------------------------------------------------------------------
+    let state = null;
     for (let i = 0; i < fields; i += 1) {
-      this.runField(p, state, this.fieldCounter + i, isEffect, input);
+      const field = { ...p };
+
+      let phase = this.driftPhase + p.driftRate * perField * (i + 1);
+      phase -= Math.floor(phase);
+
+      state = resolve(glass, field, phase);
+
+      // The bank is inside the loop too: its picture is a function of the
+      // drifted Julia constant.
+      if (needsBank) this.runIterator(field, width, height);
+
+      this.runField(field, state, this.fieldCounter + i, isEffect, input);
     }
     this.fieldCounter += fields;
+
+    this.driftPhase += p.driftRate * perField * fields;
+    this.driftPhase -= Math.floor(this.driftPhase);
 
     //---------------------------------------------------------------------
     // Display. Back to the canvas and the canvas's viewport, by hand: the
@@ -1764,6 +1842,17 @@ mountDemo({
       id: 'vignette', name: 'Vignette', type: 'standard', default: 0.08, group: 'Camera',
       display: pct,
       hint: 'The lens being dark at the edges, inside the loop — a stabiliser, not a look. It is what stops the picture filling the frame edge to edge and going flat. It also drives the display\'s bloom.',
+    },
+
+    {
+      id: 'drift', name: 'Drift', type: 'standard', default: 0.45, group: 'Camera',
+      display: pct,
+      hint: 'The operator\'s hands, and the reason the rig does not go still. A loop with constant parameters is a contraction mapping, so it converges on its attractor and then stops for ever — endless zoom included, because a self-similar attractor magnified is the same attractor. Drift makes the operator a function of time. Scaled by how stiff the rig is: a camera nudge moves an attractor by about t/(1-c), which spans two orders of magnitude between Sierpinski and a mirror rig at 0.98.',
+    },
+    {
+      id: 'driftRate', name: 'Drift Rate', type: 'standard', default: 0.52, group: 'Camera',
+      display: (v) => `${driftRateFromParam(v).toFixed(3)} Hz`,
+      hint: 'Slow. At the default the rig takes most of a minute to come back to where it was; the five modulations run at mutually irrational multiples of it, so the combination has no period at all and never repeats.',
     },
 
     //---- Loop -------------------------------------------------------------

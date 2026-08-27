@@ -690,6 +690,120 @@ void testPresets( const Target& target )
 	}
 }
 
+/**
+    How much the picture is still MOVING once it has settled.
+
+    This is the measurement behind "they all have a burst of motion and then die
+    off". A contractive loop with constant parameters is a contraction mapping,
+    so Banach guarantees it converges on a unique fixed point and then stops --
+    that is not a mistuning, it is what an iterated function system IS, and it
+    is why every rig here went still.
+
+    Settle first, then measure the mean absolute difference between consecutive
+    FIELDS. A rig that is alive keeps changing; a rig that has converged reports
+    a number that is indistinguishable from zero.
+*/
+/// Mean luma per 32x32 block. Grain averages away; structure does not.
+std::vector< double > coarse( const std::vector< unsigned char >& rgba, int width, int height )
+{
+	const int bw = ( width + 31 ) / 32;
+	const int bh = ( height + 31 ) / 32;
+	std::vector< double > out( size_t( bw ) * bh, 0.0 );
+	std::vector< int > count( size_t( bw ) * bh, 0 );
+
+	for( int y = 0; y < height; ++y )
+	{
+		for( int x = 0; x < width; ++x )
+		{
+			const size_t i = ( size_t( y ) * width + x ) * 4;
+			const double luma = ( 0.299 * rgba[ i ] + 0.587 * rgba[ i + 1 ] + 0.114 * rgba[ i + 2 ] ) / 255.0;
+			const size_t b = size_t( y / 32 ) * bw + size_t( x / 32 );
+			out[ b ] += luma;
+			++count[ b ];
+		}
+	}
+
+	for( size_t b = 0; b < out.size(); ++b )
+		if( count[ b ] > 0 )
+			out[ b ] /= double( count[ b ] );
+
+	return out;
+}
+
+void testLiveness( const Target& target, int settle, int window, int stride )
+{
+	printf( "\n== liveness (structure change per %d fields, after %d settle)\n", stride, settle );
+
+	for( int i = 0; i < presets::kCount; ++i )
+	{
+		EscapementPlugin plugin( false );
+		if( !prepare( plugin, target.width, target.height ) )
+			return;
+
+		const std::map< std::string, unsigned int > byName = parameterIndex( plugin );
+		const auto preset                                  = byName.find( "Preset" );
+		if( preset != byName.end() )
+			plugin.SetFloatParameter( preset->second, float( i + 1 ) );
+
+		run( plugin, target, settle, 8 );
+
+		std::vector< double > previous = coarse( readBytes( target ), target.width, target.height );
+		std::vector< unsigned char > previousFine = readBytes( target );
+
+		double totalFine = 0.0;
+		double totalCoarse = 0.0;
+
+		for( int k = 0; k < window; ++k )
+		{
+			run( plugin, target, stride, 8 );
+			const std::vector< unsigned char > nowFine = readBytes( target );
+			const std::vector< double > now = coarse( nowFine, target.width, target.height );
+
+			double fine = 0.0;
+			for( size_t b = 0; b < nowFine.size(); ++b )
+				fine += std::abs( int( nowFine[ b ] ) - int( previousFine[ b ] ) );
+			totalFine += fine / double( nowFine.size() ) / 255.0;
+
+			double blocks = 0.0;
+			for( size_t b = 0; b < now.size(); ++b )
+				blocks += std::abs( now[ b ] - previous[ b ] );
+			totalCoarse += blocks / double( now.size() );
+
+			previous = now;
+			previousFine = nowFine;
+		}
+
+		const double motion = totalFine / double( window );
+		const double structure = totalCoarse / double( window );
+
+		// Measured across a STRIDE of fields, not between consecutive ones.
+		//
+		// The complaint this test exists for is "they move at first and then die
+		// off", which is about evolution over seconds. Drift moves the operator's
+		// hands at a fraction of a hertz on purpose -- fast enough and it reads
+		// as an LFO wobble rather than an instrument -- so the per-field delta of
+		// a perfectly healthy rig is tiny, and a per-field threshold called four
+		// live rigs dead. A second is the timescale a person judges this on.
+
+		// TWO numbers, because they answer different complaints.
+		//
+		// `moves` counts every pixel, so injected grain alone scores well while
+		// the picture stands perfectly still -- which is exactly what the first
+		// version of this test reported, and it made five dead rigs look like
+		// seven live ones.
+		//
+		// `structure` averages 32x32 blocks first, so grain cancels and only
+		// something the eye would call motion survives. That is the number the
+		// complaint was about.
+		char label[ 200 ];
+		snprintf( label, sizeof( label ), "%-16s moves %.4f  structure %.4f",
+		          presets::kPresets[ i ].name, motion, structure );
+		check( structure > 0.004, label );
+
+		plugin.DeInitGL();
+	}
+}
+
 void usage()
 {
 	printf( "esctest -- the Escapement offline harness\n\n"
@@ -706,6 +820,7 @@ void usage()
 	        "  --rate            the rig's clock is frame-rate independent\n"
 	        "  --stability       loop gain predicts the picture\n"
 	        "  --guard           a hostile rig leaves no NaN\n"
+	        "  --liveness        the rigs are still moving once settled\n"
 	        "  --all             every check above\n" );
 }
 
@@ -728,6 +843,7 @@ int main( int argc, char** argv )
 	bool doStab  = false;
 	bool doGuard = false;
 	bool doPre   = false;
+	bool doLive  = false;
 
 	for( int i = 1; i < argc; ++i )
 	{
@@ -770,8 +886,10 @@ int main( int argc, char** argv )
 			doGuard = true;
 		else if( arg == "--presets" )
 			doPre = true;
+		else if( arg == "--liveness" )
+			doLive = true;
 		else if( arg == "--all" )
-			doNames = doTaps = doRate = doStab = doGuard = doPre = true;
+			doNames = doTaps = doRate = doStab = doGuard = doPre = doLive = true;
 		else
 		{
 			usage();
@@ -912,6 +1030,8 @@ int main( int argc, char** argv )
 		testGuard( target );
 	if( doPre )
 		testPresets( target );
+	if( doLive )
+		testLiveness( target, 400, 8, 60 );
 
 	releaseTarget( target );
 	CGLDestroyContext( context );

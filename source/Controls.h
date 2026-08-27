@@ -133,6 +133,8 @@ enum ParamId : unsigned int
 	PT_FOCUS,
 	PT_LENS,
 	PT_VIGNETTE,
+	PT_DRIFT,
+	PT_DRIFT_RATE,
 
 	// Loop -- the proc amp, which is where a rig is actually played.
 	PT_GAIN,
@@ -241,6 +243,29 @@ float PanFromParam( float value );
 
 /// Camera motion multiplier. 0..4, exponential, exactly 1 at the centre.
 float SpeedFromParam( float value );
+
+/// How far the operator's hands wander. 0..1.
+///
+/// **This is what stops a rig going still, and it is not a decoration.** A loop
+/// whose parameters are constant is a contraction mapping with constant
+/// coefficients, and Banach's theorem then guarantees exactly one attracting
+/// fixed point: the picture converges on the attractor, the attractor maps to
+/// itself, and nothing moves again for as long as the composition is open. That
+/// is not a mistuning to be dialled out -- it is what an iterated function
+/// system IS.
+///
+/// The only way out is for the operator to change, which on the rig this models
+/// is literally an operator: the Light Herder's device is played by somebody
+/// walking the cameras back and forth and turning knobs while it runs. Drift is
+/// those hands.
+float DriftFromParam( float value );
+
+/// How fast the hands move, in cycles per second. 0.005..1, exponential.
+///
+/// Slow. At the default the rig takes most of a minute to come back to where it
+/// was, which is the difference between an instrument that evolves and one that
+/// is visibly wobbling to an LFO.
+float DriftRateFromParam( float value );
 
 /// Defocus, as a mip level. 0..5.
 ///
