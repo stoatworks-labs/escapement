@@ -1,3 +1,9 @@
+> **AI-assisted project.** This codebase was created with [Claude Code](https://claude.com/claude-code).
+> Both plugins **load and render in Resolume Arena 7.27.1**, on macOS and on Windows, and the
+> Windows gate passes 15/15 — but that gate runs on Mesa llvmpipe, so it says nothing about an
+> NVIDIA or AMD driver: **nothing here has ever run on a discrete GPU**, only on one Apple
+> Silicon Mac. It has never been used on a show. See `docs/NOTES.md` for what is still open.
+
 # Escapement
 
 **A video feedback rig for Resolume — and the fractals it settles into.**
@@ -163,5 +169,4 @@ without a computer*, and that claim is this plugin's entire architecture. See
 
 MIT. See `LICENSE`.
 
-Parts of this repository were written with AI assistance; see the disclaimer in
-`ATTRIBUTIONS.md`.
+Attribution for the rig this models is in `ATTRIBUTIONS.md`.
