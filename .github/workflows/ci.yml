@@ -51,6 +51,14 @@ jobs:
       - name: The demo's shaders are the plugin's shaders
         run: python3 demo/tools/check_shaders.py
 
+      # Two esctest checks are pure parameter bookkeeping and need no GL at all,
+      # so esctest returns before it opens a context and a GPU-less runner can
+      # answer them. --hosts is here because issue #2 shipped: the preset
+      # dropdown snapped back to Custom on the one host behaviour Resolume
+      # actually has, and nothing on any machine would ever have said so.
+      - name: Presets survive every host behaviour
+        run: ./build/esctest --hosts --taps
+
       # Uploading is not only for the artefact. This repo has no package
       # manifest, so github-actions is its only Dependabot ecosystem — and a
       # bump to actions/upload-artifact otherwise touches release.yml alone,

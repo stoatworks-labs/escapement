@@ -397,9 +397,37 @@ bool EscapementPlugin::hostIsRestatingItself( unsigned int index, float value )
 {
 	seedHostValues();
 
-	const bool same = hostValues[ index ] == value;
-	hostValues[ index ] = value;
-	return same;
+	const float lastFromHost = hostValues[ index ];
+	hostValues[ index ]      = value;
+
+	const float fromPreset =
+		presetValue( Option( params[ PT_PRESET ], 1 + presets::kCount ), index );
+
+	// A quantisation allowance rather than a float epsilon. A host that keeps
+	// its parameters shorter than a float -- or round-trips them through a UI,
+	// a MIDI value or a saved composition -- hands back a number NEAR ours
+	// rather than ours, and the exact comparison that stood here read every one
+	// of those as an edit, which is why picking a preset never stuck.
+	constexpr float kSame = 1e-3f;
+
+	if( fromPreset >= 0.0f && std::fabs( value - fromPreset ) <= kSame )
+	{
+		// The host agreeing with the preset. Nothing to write -- and writing it
+		// would actively hurt: a host that quantises hands back a ROUNDED copy
+		// of our own value, params[] would take the rounding, and the "did a
+		// covered parameter move?" test below works to a tighter tolerance than
+		// this one and would read that rounding as an edit.
+		return true;
+	}
+
+	if( std::fabs( value - lastFromHost ) > kSame )
+		return false;//neither: the operator has taken over
+
+	// Deliberately not logged. A host that pushes its parameters every frame
+	// would put a line here every frame, and a log that scrolls is a log nobody
+	// reads. The event worth recording is the fallback to Custom, which
+	// happens once.
+	return true;
 }
 
 void EscapementPlugin::applyPreset( int presetIndex )
@@ -417,11 +445,17 @@ void EscapementPlugin::applyPreset( int presetIndex )
 
 		const unsigned int id = kPresetParamIDs[ i ];
 		params[ id ]          = v;
-		hostValues[ id ]      = v;
 
-		// Tell the host to re-read the slider. Resolume does not always act on
-		// it, which is exactly why `hostValues` exists -- see the note on it in
-		// Escapement.h.
+		// ☠️ `hostValues[ id ]` is deliberately NOT written here. It records what
+		// the HOST last said, and the host has not said anything yet -- it still
+		// believes the values from before the preset was chosen. Recording the
+		// preset's own values as the host's opening position makes the host's
+		// very next restatement of what it believes look like an operator edit,
+		// and the dropdown snaps straight back to Custom. That is half of issue
+		// #2, and `esctest --hosts` fails in the "ignores" column without this.
+		//
+		// Tell the host to re-read the slider. Resolume does not act on it,
+		// which is exactly why `hostValues` exists -- see the note in Escapement.h.
 		RaiseParamEvent( id, FF_EVENT_FLAG_VALUE );
 	}
 }
@@ -447,21 +481,34 @@ FFResult EscapementPlugin::SetFloatParameter( unsigned int index, float value )
 		return FF_SUCCESS;
 	}
 
-	const bool restating = hostIsRestatingItself( index, value );
+	// The host may be restating a value it still believes in rather than the
+	// operator moving anything. Letting that through would overwrite the
+	// preset's value in params[] AND read as an edit, dropping the dropdown
+	// straight back to Custom -- which is what made presets look like they
+	// could not be selected at all.
+	if( hostIsRestatingItself( index, value ) )
+		return FF_SUCCESS;
 
-	params[ index ] = value;
+	const float previous = params[ index ];
+	params[ index ]      = value;
 
 	// An operator moving a slider a preset has an opinion about means they have
-	// taken over, so drop to Custom. The host restating a value it already held
-	// is not that, and treating it as such is what made presets un-selectable
-	// in the fleet before the two were told apart.
-	if( !restating && params[ PT_PRESET ] != 0.0f )
+	// taken over, so drop to Custom. The tolerance here is deliberately tighter
+	// than the quantisation allowance above: a restatement never reaches this
+	// point, so anything that does is a real move.
+	if( params[ PT_PRESET ] != 0.0f && std::fabs( value - previous ) > 1e-4f )
 	{
 		const int active = Option( params[ PT_PRESET ], 1 + presets::kCount );
-		const float held = presetValue( active, index );
 
-		if( held >= 0.0f && held != value )
+		if( presetValue( active, index ) >= 0.0f )
 		{
+			// Logged, unlike an ordinary parameter change: this one is a state
+			// change an operator can be surprised by, it happens once rather
+			// than per frame, and diagnosing the fleet's original preset bug
+			// needed a code read precisely because nothing said it had happened.
+			diag::info( "preset dropped to Custom: parameter "
+			            + std::to_string( index ) + " moved to "
+			            + std::to_string( value ) );
 			params[ PT_PRESET ] = 0.0f;
 			RaiseParamEvent( PT_PRESET, FF_EVENT_FLAG_VALUE );
 		}
