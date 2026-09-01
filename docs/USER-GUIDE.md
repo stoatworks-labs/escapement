@@ -10,7 +10,7 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 
 *The Mirror Tunnel preset. Every edge in it is the frame's own edge, re-photographed.*
 
-> **This is v0.1.2.** The tap sets are checked against their published constants —
+> **This is v0.1.3.** The tap sets are checked against their published constants —
 > Sierpinski's three maps contract by exactly 0.500, Koch's four by 0.333, the Heighway dragon's
 > two by 0.707, and Barnsley's first map is confirmed singular, as published. Sixty trips round
 > the loop produce a bit-identical frame whether they arrive as sixty frames of one or one frame
@@ -24,6 +24,13 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 > — and 47 of them demonstrably move the picture. That check runs on software rendering, so it
 > says nothing about an NVIDIA or AMD driver, and nothing here has yet run on a discrete GPU other
 > than one Apple Silicon Mac. Try it on a spare layer first.
+>
+> **Fixed in v0.1.3: choosing a preset now sticks.** In v0.1.2 the dropdown snapped straight
+> back to Custom the moment you picked anything, and the preset never applied. Resolume keeps
+> pushing the values it still believes in, and the plugin was reading that as you having moved
+> a slider. Every preset is now checked against all three things a host can do with the values
+> a preset writes — honour them, ignore them, or hand back a rounded copy — and that check runs
+> on every build.
 >
 > This codebase was created with AI assistance, directed and reviewed by a human author.
 
