@@ -428,6 +428,99 @@ void check( bool ok, const char* what )
 /// attractor and stays there. What is asserted is what can be asserted without
 /// re-deriving the maps -- the number of maps, that they all contract, and that
 /// the attractor lands inside the frame.
+/// Presets survive every host behaviour.
+///
+/// The host owns parameter state, and what it does with the values a preset
+/// writes is not a thing the plugin gets to decide. Three behaviours matter:
+/// a host that consumes the value events and pushes our own numbers back
+/// ("honours"), one that ignores them and carries on pushing what it still
+/// believes ("ignores"), and one that honours them but hands back a rounded
+/// copy ("quantises"). Resolume is the second and third.
+///
+/// This is the check that was missing here. Escapement carried the fleet's
+/// preset shape but compared floats with `==`, so every quantised echo read as
+/// an operator edit and the dropdown snapped back to Custom the instant a
+/// preset was chosen -- issue #2. It needs no GL, so it runs with the taps.
+int testHosts()
+{
+	printf( "\n== hosts -- presets survive every host behaviour\n\n" );
+	printf( "  preset                    honours   ignores   quantises\n" );
+
+	int count               = 0;
+	const unsigned int* ids = EscapementPlugin::PresetParamIDsForTest( count );
+
+	enum Behaviour
+	{
+		Honours,
+		Ignores,
+		Quantises,
+		BehaviourCount
+	};
+
+	int failures = 0;
+	for( int i = 1; i <= presets::kCount; ++i )
+	{
+		bool result[ BehaviourCount ] = {};
+
+		for( int b = 0; b < BehaviourCount; ++b )
+		{
+			EscapementPlugin plugin( false );
+
+			// What the host believes before the preset is chosen.
+			std::vector< float > believed( static_cast< size_t >( count ) );
+			for( int j = 0; j < count; ++j )
+				believed[ j ] = plugin.GetFloatParameter( ids[ j ] );
+
+			plugin.SetFloatParameter( PT_PRESET, static_cast< float >( i ) );
+
+			// Twice, because a host that pushes every frame pushes more than
+			// once and the bug this guards against only needed one.
+			for( int pass = 0; pass < 2; ++pass )
+			{
+				for( int j = 0; j < count; ++j )
+				{
+					float push = 0.0f;
+					switch( b )
+					{
+						case Honours: push = plugin.GetFloatParameter( ids[ j ] ); break;
+						case Ignores: push = believed[ j ]; break;
+						default:
+						{
+							const float value = plugin.GetFloatParameter( ids[ j ] );
+							push              = std::round( value * 1000.0f ) / 1000.0f;
+							break;
+						}
+					}
+					plugin.SetFloatParameter( ids[ j ], push );
+				}
+			}
+
+			bool ok = std::lround( plugin.GetFloatParameter( PT_PRESET ) ) == i;
+			for( int j = 0; j < count && ok; ++j )
+			{
+				const float expected = presets::kPresets[ i - 1 ].values[ j ];
+				if( expected < 0.0f )
+					continue;//not covered by this preset
+
+				//The same quantisation allowance the plugin itself uses.
+				if( std::fabs( plugin.GetFloatParameter( ids[ j ] ) - expected ) > 1.5e-3f )
+					ok = false;
+			}
+			result[ b ] = ok;
+			if( !ok )
+				++failures;
+		}
+
+		printf( "  %-24s %8s %9s %11s\n", presets::kPresets[ i - 1 ].name,
+		        result[ Honours ] ? "ok" : "FAIL",
+		        result[ Ignores ] ? "ok" : "FAIL",
+		        result[ Quantises ] ? "ok" : "FAIL" );
+	}
+
+	printf( "\n  %s\n", failures == 0 ? "PASS" : "FAIL" );
+	return failures == 0 ? 0 : 1;
+}
+
 void testTaps()
 {
 	printf( "\n== taps\n" );
@@ -1214,6 +1307,7 @@ void usage()
 	        "  --contact PATH    a contact sheet of every factory preset\n"
 	        "  --names           no parameter name exceeds 16 characters\n"
 	        "  --taps            the tap sets, against published constants\n"
+	        "  --hosts           presets survive every host behaviour\n"
 	        "  --rate            the rig's clock is frame-rate independent\n"
 	        "  --stability       loop gain predicts the picture\n"
 	        "  --guard           a hostile rig leaves no NaN\n"
@@ -1251,6 +1345,7 @@ int main( int argc, char** argv )
 	bool doStab  = false;
 	bool doGuard = false;
 	bool doPre   = false;
+	bool doHosts = false;
 	bool doLive  = false;
 	bool doCav   = false;
 	bool doMotion = false;
@@ -1305,6 +1400,8 @@ int main( int argc, char** argv )
 			doGuard = true;
 		else if( arg == "--presets" )
 			doPre = true;
+		else if( arg == "--hosts" )
+			doHosts = true;
 		else if( arg == "--liveness" )
 			doLive = true;
 		else if( arg == "--reaction" )
@@ -1314,7 +1411,7 @@ int main( int argc, char** argv )
 		else if( arg == "--motion" )
 			doMotion = true;
 		else if( arg == "--all" )
-			doNames = doTaps = doRate = doStab = doGuard = doPre = doLive = doCav = doScale = true;
+			doNames = doTaps = doHosts = doRate = doStab = doGuard = doPre = doLive = doCav = doScale = true;
 		else
 		{
 			usage();
@@ -1332,6 +1429,24 @@ int main( int argc, char** argv )
 	// out of the shader -- so run them before a context exists.
 	if( doTaps )
 		testTaps();
+
+	// No GL either, and it is the fastest way to find a broken preset.
+	if( doHosts )
+		fails += testHosts();
+
+	// Both checks above are pure parameter bookkeeping. If nothing that needs a
+	// picture was asked for, return before a context is created -- that is what
+	// lets CI run them on a runner with no GPU, which is where this repo's
+	// checks have never been able to go.
+	const bool needsGL = doList || doNames || doRate || doStab || doGuard || doPre
+	                     || doLive || doCav || doScale || doMotion
+	                     || !outPath.empty() || !contactPath.empty() || !sequenceDir.empty();
+	if( !needsGL )
+	{
+		if( fails > 0 )
+			printf( "\n%d check(s) FAILED\n", fails );
+		return fails == 0 ? 0 : 1;
+	}
 
 	CGLContextObj context = createContext();
 	if( context == nullptr )
