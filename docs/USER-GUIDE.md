@@ -10,7 +10,8 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 
 *The Mirror Tunnel preset. Every edge in it is the frame's own edge, re-photographed.*
 
-> **This is v0.1.3.** The tap sets are checked against their published constants —
+> **This is v0.1.4.** The point release changed nothing but the Windows installer, which no
+> longer touches the system PATH. The tap sets are checked against their published constants —
 > Sierpinski's three maps contract by exactly 0.500, Koch's four by 0.333, the Heighway dragon's
 > two by 0.707, and Barnsley's first map is confirmed singular, as published. Sixty trips round
 > the loop produce a bit-identical frame whether they arrive as sixty frames of one or one frame
