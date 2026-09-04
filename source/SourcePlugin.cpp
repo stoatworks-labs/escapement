@@ -44,7 +44,7 @@ static CFFGLPluginInfo PluginInfo(
 	0,                                                          // Plugin major version number
 	1,                                                          // Plugin minor version number
 	FF_SOURCE,                                                  // Plugin type
-	"A video feedback rig and the fractals it settles into",     // Plugin description
+	"A video feedback rig, and the fractals it settles into.\n\nNot a fractal generator with a feedback effect bolted on. A model of an optical rig: a camera looking at a screen showing what the camera saw a field ago, through glass that splits the light into several paths, and an operator playing the gain against unity.\n\nNothing here draws a Sierpinski gasket. There are three half-scale taps on the vertices of a triangle, and the gasket is where the loop goes.\n\nA rig left alone goes still, correctly, and zooming does not rescue it. Drift is the operator's hands moving, and the only thing keeping the picture alive.\n\nStart from a Preset, at the bottom.",// Plugin description
 	"Escapement FFGL source"                                    // About
 );
 
