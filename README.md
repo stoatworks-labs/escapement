@@ -29,6 +29,10 @@ Two plugins:
 | **Escapement** | Source. A rig with nothing in front of the lens but what it makes itself. |
 | **Escapement Feed** | Effect. The same rig with your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
 
+![One of Escapement's rigs a few fields into its loop: a colour seed in the centre and the grey trails of earlier passes fanning out](docs/hero.png)
+
+<sub>One of the rigs a few fields into its loop: a colour seed in the centre and the greying trails of earlier passes fanning out through the split paths — rendered by the plugin's own offline harness (`esctest`), not captured from Resolume.</sub>
+
 ---
 
 <!-- downloads:start -->
