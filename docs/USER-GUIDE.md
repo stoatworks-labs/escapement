@@ -45,7 +45,7 @@ the Avenue equivalent) and restart Resolume — it scans that folder at startup 
 | | |
 |---|---|
 | **Escapement** | A source. A rig with nothing in front of the lens but what it makes itself. |
-| **Escapement Feed** | An effect. Your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
+| **Escapement+** | An effect. Your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
 
 There is no OpenFX build. Escapement's picture is the whole history of its loop, and an OpenFX host
 renders arbitrary frames in arbitrary order, which is a question a feedback rig cannot answer.
@@ -150,7 +150,7 @@ roughly three times the cost, and a starved iteration count looks exactly like a
 
 ## Using it as an effect
 
-`Escapement Feed` takes your clip. Set **Inject** to `Clip` and the footage goes *into* the loop
+`SW Escapement+` takes your clip. Set **Inject** to `Clip` and the footage goes *into* the loop
 rather than behind the picture, so the attractor is built out of its light and keeps developing
 after the clip has moved on. **Mask Mode** and **Mix** decide how the result meets the original.
 
