@@ -35,7 +35,7 @@ namespace
 {
 /// The name the host shows. Sixteen characters, and "Escapement Feedback" was
 /// nineteen.
-constexpr char kPluginName[] = "Escapement Feed";
+constexpr char kPluginName[] = "SW Escapement+";
 static_assert( sizeof( kPluginName ) - 1 <= 16,
                "FFGL's PluginInfoStruct has char PluginName[16] and does not null-terminate it -- "
                "a longer name is truncated by the host and looks like a typo in the effects list" );

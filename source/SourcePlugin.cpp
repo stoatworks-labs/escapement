@@ -19,7 +19,7 @@
 */
 /// The name the host shows. See EffectPlugin.cpp: FFGL's PluginInfoStruct has
 /// `char PluginName[ 16 ]` and does not null-terminate it.
-constexpr char kPluginName[] = "Escapement";
+constexpr char kPluginName[] = "SW Escapement";
 static_assert( sizeof( kPluginName ) - 1 <= 16,
                "FFGL truncates the plugin name at 16 characters" );
 

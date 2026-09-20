@@ -27,7 +27,7 @@ Two plugins:
 | | |
 |---|---|
 | **Escapement** | Source. A rig with nothing in front of the lens but what it makes itself. |
-| **Escapement Feed** | Effect. The same rig with your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
+| **Escapement+** | Effect. The same rig with your clip in front of the lens — injected *into* the loop, so the fractal is built out of the footage. |
 
 ![One of Escapement's rigs a few fields into its loop: a colour seed in the centre and the grey trails of earlier passes fanning out](docs/hero.png)
 
@@ -106,8 +106,11 @@ Download the release, unzip, and drop both bundles into:
 - **macOS** — `~/Documents/Resolume Arena/Extra Effects/`
 - **Windows** — `%USERPROFILE%\Documents\Resolume Arena\Extra Effects\`
 
-Restart Resolume. `Escapement` appears under Sources; `Escapement Feed`
-under Effects.
+Restart Resolume. `SW Escapement` appears under Sources; `SW Escapement+`
+under Effects. The `SW ` prefix groups every Stoatworks plugin together in
+the browser; *Escapement+* is *Escapement Feed* shortened to fit FFGL's
+sixteen characters. The file is still `Escapement Feed.bundle`, so an
+upgrade replaces it in place.
 
 macOS builds are universal (Apple Silicon and Intel). There is no signed release
 yet, so Gatekeeper will object once — see `docs/UNSIGNED.md`.

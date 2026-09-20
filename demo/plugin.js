@@ -1788,7 +1788,7 @@ mountDemo({
     default: 'source',
     options: [
       { id: 'source', name: 'Escapement', hint: 'The source: a rig with nothing in front of the lens but what it makes itself.' },
-      { id: 'effect', name: 'Escapement Feed', hint: 'The effect: the clip in front of the lens, injected INTO the loop, so the fractal is built out of the footage.' },
+      { id: 'effect', name: 'Escapement+', hint: 'The effect: the clip in front of the lens, injected INTO the loop, so the fractal is built out of the footage.' },
     ],
   },
 
