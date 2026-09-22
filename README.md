@@ -39,14 +39,14 @@ Two plugins:
 
 ## Download
 
-**[v0.1.6](https://github.com/stoatworks-labs/escapement/releases/tag/v0.1.6)** — prebuilt for macOS and Windows. Pick your platform:
+**[v0.1.7](https://github.com/stoatworks-labs/escapement/releases/tag/v0.1.7)** — prebuilt for macOS and Windows. Pick your platform:
 
 <details>
 <summary><b>macOS</b> — Universal (Apple Silicon + Intel)</summary>
 
 | Build | Download | Size |
 | --- | --- | --- |
-| Universal (Apple Silicon + Intel) · .dmg disk image | [`escapement-0.1.6-macos-universal.dmg`](https://github.com/stoatworks-labs/escapement/releases/download/v0.1.6/escapement-0.1.6-macos-universal.dmg) | 456 KB |
+| Universal (Apple Silicon + Intel) · .dmg disk image | [`escapement-0.1.7-macos-universal.dmg`](https://github.com/stoatworks-labs/escapement/releases/download/v0.1.7/escapement-0.1.7-macos-universal.dmg) | 456 KB |
 | Universal (Apple Silicon + Intel) · .zip archive | [`escapement-macos-universal.zip`](https://github.com/stoatworks-labs/escapement/releases/latest/download/escapement-macos-universal.zip) | 403 KB |
 
 </details>
@@ -56,7 +56,7 @@ Two plugins:
 
 | Build | Download | Size |
 | --- | --- | --- |
-| x64 · .exe installer | [`escapement-0.1.6-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/escapement/releases/download/v0.1.6/escapement-0.1.6-windows-x86_64-setup.exe) | 229 KB |
+| x64 · .exe installer | [`escapement-0.1.7-windows-x86_64-setup.exe`](https://github.com/stoatworks-labs/escapement/releases/download/v0.1.7/escapement-0.1.7-windows-x86_64-setup.exe) | 229 KB |
 | x64 · .zip archive | [`escapement-windows-x86_64.zip`](https://github.com/stoatworks-labs/escapement/releases/latest/download/escapement-windows-x86_64.zip) | 249 KB |
 
 </details>
