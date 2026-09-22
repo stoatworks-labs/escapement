@@ -10,8 +10,10 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 
 *The Mirror Tunnel preset. Every edge in it is the frame's own edge, re-photographed.*
 
-> **This is v0.1.4.** The point release changed nothing but the Windows installer, which no
-> longer touches the system PATH. The tap sets are checked against their published constants —
+> **This is v0.1.7.** Since v0.1.4 both plugins report themselves with an `SW ` prefix, so
+> they sit together in Resolume's browser, and the diagnostics log is steered by
+> `ESCAPEMENT_LOG_DIR` rather than another plugin's variable. Neither changed a control or
+> the picture. The tap sets are checked against their published constants —
 > Sierpinski's three maps contract by exactly 0.500, Koch's four by 0.333, the Heighway dragon's
 > two by 0.707, and Barnsley's first map is confirmed singular, as published. Sixty trips round
 > the loop produce a bit-identical frame whether they arrive as sixty frames of one or one frame
