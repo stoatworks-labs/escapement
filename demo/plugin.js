@@ -1775,6 +1775,10 @@ const pct = (v) => `${Math.round(clamp01(v) * 100)}%`;
 
 mountDemo({
   name: 'Escapement',
+  // The FFGL types this repo registers (EffectPlugin.cpp and SourcePlugin.cpp),
+  // for the kit banner's closing sentence, which said "effect" alone until
+  // 2026-09-24.
+  kind: ['effect', 'source'],
   pluginId: 'ES01',
   tagline: 'A video feedback rig — and the fractals it settles into.',
   repo: 'https://github.com/stoatworks-labs/escapement',
