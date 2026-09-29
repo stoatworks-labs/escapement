@@ -1,4 +1,5 @@
-> **AI-assisted project.** This codebase was created with [Claude Code](https://claude.com/claude-code).
+> **AI-assisted project.** This codebase was created with [Claude](https://claude.com/claude-code)
+> (Anthropic), directed and reviewed by a human author.
 > Both plugins **load and render in Resolume Arena 7.27.1**, on macOS and on Windows, and the
 > Windows gate passes 15/15 — but that gate runs on Mesa llvmpipe, so it says nothing about an
 > NVIDIA or AMD driver: **nothing here has ever run on a discrete GPU**, only on one Apple
