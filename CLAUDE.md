@@ -124,10 +124,12 @@ Read `AGENTS.md` before changing the loop, the taps or the proc amp.
 
 ## Not done yet
 
-- **OpenFX target.** The OFX SDK subset is vendored and the CMake pattern is in
-  orrery, but Escapement's picture is a GPU feedback loop and an OFX host wants
-  a CPU render of an arbitrary frame in arbitrary order — which a loop with
-  history cannot answer without being reimplemented. Deliberately deferred.
+- **OpenFX target.** Nothing of it is in this repo: there is no
+  `external/openfx` here and never has been. The SDK subset and the CMake
+  pattern would come from orrery. Escapement's picture is a GPU feedback loop and
+  an OFX host wants a CPU render of an arbitrary frame in arbitrary order —
+  which a loop with history cannot answer without being reimplemented.
+  Deliberately deferred.
 - **Only one GPU.** Arena 7.27.1 runs both plugins on macOS and Windows and the
   Windows gate passes 15/15, but on Mesa llvmpipe — nothing has run on a
   discrete NVIDIA or AMD card.

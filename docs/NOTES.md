@@ -369,10 +369,11 @@ tail always violates. Verified by zeroing one and watching it fail.
 
 ## Still open
 
-- **No OpenFX target.** The pattern is vendored and orrery's CMake shows how,
-  but an OFX host renders arbitrary frames in arbitrary order, and a loop with
-  history cannot answer that without being reimplemented as something else.
-  Deliberately deferred rather than half-built.
+- **No OpenFX target.** None of it is in this repo — the OFX SDK subset is not
+  vendored here; orrery has it, and its CMake shows the pattern. The obstacle is
+  not the plumbing: an OFX host renders arbitrary frames in arbitrary order, and
+  a loop with history cannot answer that without being reimplemented as
+  something else. Deliberately deferred rather than half-built.
 - **Only one GPU.** Arena 7.27.1 loads and runs both plugins on macOS and on
   Windows, and the Windows gate passes 15/15 — but that runs on Mesa llvmpipe,
   so it says nothing about an NVIDIA or AMD driver. Nothing has yet run on a
