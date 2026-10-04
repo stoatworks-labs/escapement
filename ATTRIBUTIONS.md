@@ -39,7 +39,7 @@ deep-zoom literature.
 ## Code
 
 - **FFGL SDK** — [github.com/resolume/ffgl](https://github.com/resolume/ffgl),
-  pinned at `b1afaf9`. MIT.
+  pinned at `b1afaf9`. BSD-3-Clause, copyright FreeFrame.
 - **OpenFX SDK subset** — vendored under `external/openfx`. BSD-3-Clause.
 - **`lowbias32`** — Chris Wellons' 32-bit integer hash, in `source/Hash.h`.
   Public domain.
