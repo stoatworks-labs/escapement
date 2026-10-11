@@ -10,7 +10,9 @@ The fractals are what that loop settles into. Nothing in it evaluates a fractal.
 
 *The Mirror Tunnel preset. Every edge in it is the frame's own edge, re-photographed.*
 
-> **This is v0.1.7.** Since v0.1.4 both plugins report themselves with an `SW ` prefix, so
+> **This is v0.1.8**, which fixes the source in a host that never sends a resize: it read a
+> viewport it had never stored and drew nothing. Resolume may always send one; the fix holds
+> either way. Since v0.1.4 both plugins report themselves with an `SW ` prefix, so
 > they sit together in Resolume's browser, and the diagnostics log is steered by
 > `ESCAPEMENT_LOG_DIR` rather than another plugin's variable. Neither changed a control or
 > the picture. The tap sets are checked against their published constants —
