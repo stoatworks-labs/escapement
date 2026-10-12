@@ -1,24 +1,24 @@
 > **AI-assisted project.** This codebase was created with [Claude](https://claude.com/claude-code)
 > (Anthropic), directed and reviewed by a human author.
 > Both plugins **load and render in Resolume Arena 7.27.1**, on macOS and on Windows, and the
-> Windows gate passes 15/15 — but that gate runs on Mesa llvmpipe, so it says nothing about an
+> Windows gate passes 15/15. That gate runs on Mesa llvmpipe, though, so it says nothing about an
 > NVIDIA or AMD driver: **nothing here has ever run on a discrete GPU**, only on one Apple
-> Silicon Mac. It has never been used on a show. See `docs/NOTES.md` for what is still open.
+> Silicon Mac. It's never been used on a show. `docs/NOTES.md` has what's still open.
 
 # Escapement
 
-**A video feedback rig for Resolume — and the fractals it settles into.**
+**A video feedback rig for Resolume, and the fractals it settles into.**
 
-Escapement is not a fractal generator with a feedback effect bolted on. It is a
-model of an optical video feedback rig: a camera looking at a screen that is
-showing what the camera saw a field ago, through glass that splits the light
-into several paths, with a proc amp in the cable and an operator playing the
-gain against unity.
+Escapement models an optical video feedback rig: a camera looking at a screen
+that's showing what the camera saw a field ago, through glass that splits the
+light into several paths, with a proc amp in the cable and an operator playing
+the gain against unity. It's the rig first, rather than a fractal generator with
+a feedback effect bolted on.
 
-The fractals are what that loop settles into. There is no Mandelbrot routine
-driving the Mandelbrot rig's picture into a texture; there is a bank of
-iterating amplifiers. There is no code anywhere that draws a Sierpinski gasket.
-There are three half-scale taps on the vertices of a triangle, and the gasket is
+The fractals are what that loop settles into. There's no Mandelbrot routine
+driving the Mandelbrot rig's picture into a texture, just a bank of iterating
+amplifiers. There's no code anywhere that draws a Sierpinski gasket either:
+there are three half-scale taps on the vertices of a triangle, and the gasket is
 where the loop goes.
 
 **Video:** [What it does, in 68 seconds](https://www.youtube.com/watch?v=Ny12MsnFOmM)
@@ -32,7 +32,7 @@ Two plugins:
 
 ![One of Escapement's rigs a few fields into its loop: a colour seed in the centre and the grey trails of earlier passes fanning out](docs/hero.png)
 
-<sub>One of the rigs a few fields into its loop: a colour seed in the centre and the greying trails of earlier passes fanning out through the split paths — rendered by the plugin's own offline harness (`esctest`), not captured from Resolume.</sub>
+<sub>One of the rigs a few fields into its loop: a colour seed in the centre and the greying trails of earlier passes fanning out through the split paths. Rendered by the plugin's own offline harness (`esctest`) rather than captured from Resolume.</sub>
 
 ---
 
@@ -75,17 +75,17 @@ Seeded, Julia, Mandelbrot, Globe.
 
 **Endless zoom and pan, with no precision limit.** The camera's zoom is a
 per-field multiplier applied to the picture, not a coordinate anyone stores.
-After a thousand fields at 1.02 the magnification is 1.02¹⁰⁰⁰ — a number that
-never exists anywhere in the plugin, so there is nothing to overflow and no
+After a thousand fields at 1.02 the magnification is 1.02¹⁰⁰⁰, a number that
+never exists anywhere in the plugin, so there's nothing to overflow and no
 mantissa to run out of. Leave it running for an hour.
 
 **A deep zoom where there *is* a coordinate.** The Julia and Mandelbrot rigs
-hold one, so they have the limit the others do not: single precision runs out
+hold one, so they have the limit the others don't: single precision runs out
 around 1e5, and the Extended setting uses double-float arithmetic to reach about
 1e13 for roughly three times the cost.
 
 **Seeded rigs.** Type a number, get a rig. Every seed is framed, because a
-seeded attractor's bounds are measured rather than assumed — seed 4021 settles
+seeded attractor's bounds are measured rather than assumed. Seed 4021 settles
 inside 1.45 frame units and seed 7 spreads across 2.68, and any single constant
 would crop one and shrink the other to a speck.
 
@@ -93,7 +93,7 @@ would crop one and shrink the other to a speck.
 camera at it. The loop underneath keeps running, so the texture on the globe is
 alive rather than a still that spins.
 
-**Twelve factory presets**, each a working operating point — because a rig has a
+**Twelve factory presets**, each a working operating point, because a rig has a
 small set of settings that produce anything at all and a very large set that
 produce a black frame or a white one, and forty sliders over a black frame is no
 way in.
@@ -113,8 +113,8 @@ the browser; *Escapement+* is *Escapement Feed* shortened to fit FFGL's
 sixteen characters. The file is still `Escapement Feed.bundle`, so an
 upgrade replaces it in place.
 
-macOS builds are universal (Apple Silicon and Intel). There is no signed release
-yet, so Gatekeeper will object once — see `docs/UNSIGNED.md`.
+macOS builds are universal (Apple Silicon and Intel). There's no signed release
+yet, so Gatekeeper will object once (see `docs/UNSIGNED.md`).
 
 ## Build
 
@@ -136,26 +136,26 @@ Unity is at 0.625 of the slider's travel, exactly, so you can find it in the
 dark.
 
 **Hue Rotate** is the difference between a picture and a performance. With it at
-zero the loop converges to a fixed point and stops. With a little, it cannot
-converge — a fixed point would have to be a colour that is its own rotation — so
+zero the loop converges to a fixed point and stops. With a little, it can't
+converge (a fixed point would have to be a colour that's its own rotation), so
 the structure keeps re-entering itself and the colour walks the wheel forever.
 Two thousandths of a turn per field is plenty.
 
-**Focus** is a lens that is slightly soft, and it is inside the loop. Sharp and
-hot breaks up into single-pixel noise; soft and hot is the thing everyone
-recognises as video feedback. It is measured as a fraction of the frame, so a
+**Focus** is a slightly soft lens, and it's inside the loop. Sharp and hot
+breaks up into single-pixel noise; soft and hot is the thing everyone
+recognises as video feedback. It's measured as a fraction of the frame, so a
 preset looks the same on your preview and on a 4K output.
 
 **Zoom below 1 gives you the tunnel.** A feedback tunnel is made of the screen's
-own edge, re-photographed — so the camera has to be able to see past the frame,
-which means pulling back, not pushing in. Above 1:1 you get expanding blooms
+own edge, re-photographed, so the camera has to be able to see past the frame,
+which means pulling back rather than pushing in. Above 1:1 you get expanding blooms
 instead, which is a different and also good thing.
 
-**Drift is what keeps it alive, and it is on by default.** A feedback loop with
+**Drift is what keeps it alive, and it's on by default.** A feedback loop with
 every knob held still is a contraction mapping: it converges on its attractor and
-then stops, for ever, and zooming does not help because a self-similar attractor
+then stops, for ever, and zooming doesn't help because a self-similar attractor
 magnified is the same attractor. Real rigs never go still because a person is
-always moving the cameras. Drift is that person — slow, wandering, and running at
+always moving the cameras. Drift is that person: slow, wandering, and running at
 mutually irrational rates so it never repeats. Turn it to zero and the rig will
 settle within seconds, which is worth doing once just to see it happen.
 
@@ -167,11 +167,11 @@ the same speed whether the host is managing 60 fps or dropping to 24.
 ## Credit where it is due
 
 The rig this models is real: **The Light Herder**'s 4K Video Feedback Fractal
-Device — cameras, 4K screens, half-mirrored glass and analogue knobs, with the
+Device, with cameras, 4K screens, half-mirrored glass and analogue knobs, and the
 operator as part of the loop. Its video is
 [here](https://youtu.be/koDCabeh5kQ), the claim in its description is *fractals
-without a computer*, and that claim is this plugin's entire architecture. See
-`ATTRIBUTIONS.md`.
+without a computer*, and that claim is this plugin's entire architecture (on a
+computer, admittedly). See `ATTRIBUTIONS.md`.
 
 ## Licence
 
