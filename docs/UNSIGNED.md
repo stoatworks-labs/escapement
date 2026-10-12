@@ -1,12 +1,8 @@
 # Running Escapement — Gatekeeper, SmartScreen and firewalls
 
-**Escapement has not had a signed release yet.** Until it is wired into the
-fleet's autosigner, both the macOS and the Windows builds are unsigned, and both
-Gatekeeper and SmartScreen will object once. This page covers clearing that, the
-firewall prompts, and how to verify a download.
-
-Once releases are signed and notarised the macOS half of this page stops
-applying and the Windows half still does.
+macOS builds are signed and notarised, so they just open. The Windows
+builds are unsigned and SmartScreen will object once. This page covers
+that, the firewall prompts, and how to verify a download.
 
 ## Why the Windows builds are unsigned
 

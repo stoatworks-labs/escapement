@@ -113,8 +113,9 @@ the browser; *Escapement+* is *Escapement Feed* shortened to fit FFGL's
 sixteen characters. The file is still `Escapement Feed.bundle`, so an
 upgrade replaces it in place.
 
-macOS builds are universal (Apple Silicon and Intel). There's no signed release
-yet, so Gatekeeper will object once (see `docs/UNSIGNED.md`).
+macOS builds are universal (Apple Silicon and Intel), signed and notarised, so
+Gatekeeper won't object. The Windows builds aren't signed, so SmartScreen will,
+once (see `docs/UNSIGNED.md`).
 
 ## Build
 
