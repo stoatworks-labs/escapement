@@ -23,6 +23,8 @@ where the loop goes.
 
 **Video:** [What it does, in 68 seconds](https://www.youtube.com/watch?v=Ny12MsnFOmM)
 
+The [project page](https://stoatworks-labs.com/software/escapement/) has the downloads, the [user guide](https://stoatworks-labs.com/software/escapement/guide/), the video and the [browser demo](https://escapement-demo.stoatworks-labs.com/).
+
 Two plugins:
 
 | | |
